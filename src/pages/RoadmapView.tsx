@@ -1,11 +1,10 @@
+
 import { useState, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Calendar, History, MapPin } from "lucide-react";
+import { History, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays } from "date-fns";
 
 export default function RoadmapView() {
@@ -88,36 +87,20 @@ export default function RoadmapView() {
     };
   };
 
+  // Renamed phases as per the requirement
   const phases = [
-    { key: 'requirement', label: 'Req', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
-    { key: 'design', label: 'Design', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
-    { key: 'dev', label: 'Dev', color: 'bg-green-500', startField: 'devStartDate', endField: 'devEndDate' },
+    { key: 'requirement', label: 'REQ', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
+    { key: 'design', label: 'DES', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
+    { key: 'dev', label: 'DEV', color: 'bg-green-500', startField: 'devStartDate', endField: 'devEndDate' },
     { key: 'cst', label: 'CST', color: 'bg-orange-500', startField: 'cstStartDate', endField: 'cstEndDate' },
     { key: 'uat', label: 'UAT', color: 'bg-red-500', startField: 'uatStartDate', endField: 'uatEndDate' },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Phase Legend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            {phases.map(phase => (
-              <div key={phase.key} className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded ${phase.color}`}></div>
-                <span className="text-sm font-medium">{phase.label}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Timeline */}
+    <div className="space-y-6 flex flex-col">
+      {/* Timeline FIRST, legend later */}
       {allPlans.length > 0 ? (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden order-1">
           <CardHeader>
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
@@ -125,7 +108,8 @@ export default function RoadmapView() {
             {/* Timeline Header */}
             <div className="border-b bg-gray-50 p-4">
               <div className="flex">
-                <div className="w-80 flex-shrink-0"></div>
+                {/* Make capability column width smaller */}
+                <div className="w-56 flex-shrink-0"></div>
                 <div className="flex-1 relative">
                   <div className="flex">
                     {months.map((month, index) => (
@@ -141,7 +125,6 @@ export default function RoadmapView() {
                 </div>
               </div>
             </div>
-
             {/* Timeline Content */}
             <div className="divide-y divide-gray-200">
               {data.capabilities.map(capability => {
@@ -159,10 +142,11 @@ export default function RoadmapView() {
                   <div key={capability.id} className="bg-white">
                     {plansToShow.map(({ plan, isActive }, planIndex) => (
                       <div key={plan.id} className="flex items-center py-4 hover:bg-gray-50">
-                        <div className="w-80 flex-shrink-0 px-4">
+                        {/* Capability Column: reduced width */}
+                        <div className="w-56 flex-shrink-0 px-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-medium text-gray-900">
+                              <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
                                 {capability.name}
                                 {!isActive && (
                                   <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
@@ -195,8 +179,8 @@ export default function RoadmapView() {
                             )}
                           </div>
                         </div>
-                        {/* PHASES: All phases in a single row */}
-                        <div className="flex-1 relative h-8 px-4">
+                        {/* Timeline Column: increased width by flex-grow */}
+                        <div className="flex-1 relative h-8 px-4 min-w-0">
                           <div className="relative h-full w-full">
                             {phases.map(phase => {
                               const startDate = plan[phase.startField as keyof typeof plan] as Date;
@@ -230,7 +214,7 @@ export default function RoadmapView() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="order-1">
           <CardContent className="p-12 text-center">
             <div className="text-gray-500">
               <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -242,6 +226,25 @@ export default function RoadmapView() {
           </CardContent>
         </Card>
       )}
+
+      {/* Legend moved to BOTTOM, order-2 */}
+      <Card className="order-2">
+        <CardHeader>
+          <CardTitle className="text-lg">Phase Legend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            {phases.map(phase => (
+              <div key={phase.key} className="flex items-center space-x-2">
+                <div className={`w-4 h-4 rounded ${phase.color}`}></div>
+                <span className="text-sm font-medium">{phase.label}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+// ... file ends here ...
