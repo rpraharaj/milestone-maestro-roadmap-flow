@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppData, Capability, Milestone, RoadmapPlan } from '@/types';
 
@@ -12,6 +11,7 @@ interface DataContextType {
   deleteMilestone: (id: string) => void;
   addRoadmapPlan: (plan: Omit<RoadmapPlan, 'id' | 'createdAt' | 'version'>) => void;
   updateRoadmapPlan: (capabilityId: string, plan: Omit<RoadmapPlan, 'id' | 'capabilityId' | 'createdAt' | 'version'>) => void;
+  deleteRoadmapPlan: (planId: string) => void;
   getRoadmapHistory: (capabilityId: string) => RoadmapPlan[];
   getActiveRoadmapPlan: (capabilityId: string) => RoadmapPlan | undefined;
   exportData: () => AppData;
@@ -166,6 +166,35 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     addRoadmapPlan({ ...updates, capabilityId });
   };
 
+  const deleteRoadmapPlan = (planId: string) => {
+    setData(prev => {
+      const updatedPlans = prev.roadmapPlans.filter(plan => plan.id !== planId);
+      
+      // Find the capability that had this plan
+      const deletedPlan = prev.roadmapPlans.find(plan => plan.id === planId);
+      if (deletedPlan && deletedPlan.isActive) {
+        // If we're deleting the active plan, make the most recent remaining plan active
+        const remainingPlans = updatedPlans
+          .filter(plan => plan.capabilityId === deletedPlan.capabilityId)
+          .sort((a, b) => b.version - a.version);
+        
+        if (remainingPlans.length > 0) {
+          const mostRecentPlan = remainingPlans[0];
+          updatedPlans.forEach(plan => {
+            if (plan.id === mostRecentPlan.id) {
+              plan.isActive = true;
+            }
+          });
+        }
+      }
+      
+      return {
+        ...prev,
+        roadmapPlans: updatedPlans,
+      };
+    });
+  };
+
   const getRoadmapHistory = (capabilityId: string): RoadmapPlan[] => {
     return data.roadmapPlans
       .filter(plan => plan.capabilityId === capabilityId)
@@ -194,6 +223,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         deleteMilestone,
         addRoadmapPlan,
         updateRoadmapPlan,
+        deleteRoadmapPlan,
         getRoadmapHistory,
         getActiveRoadmapPlan,
         exportData,

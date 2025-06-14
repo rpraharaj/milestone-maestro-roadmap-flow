@@ -1,14 +1,25 @@
-
 import React, { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, History, Plus, Edit } from "lucide-react";
+import { Search, History, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import RoadmapPlanDialog from "@/components/RoadmapPlanDialog";
 import { format } from "date-fns";
 import classNames from "clsx";
+import { toast } from "@/hooks/use-toast";
 import {
   Table,
   TableHeader,
@@ -32,7 +43,7 @@ const DATE_FIELDS = [
 ];
 
 const RoadmapManagement = () => {
-  const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
+  const { data, getActiveRoadmapPlan, getRoadmapHistory, deleteRoadmapPlan } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCapabilityId, setSelectedCapabilityId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,6 +59,14 @@ const RoadmapManagement = () => {
 
   const toggleHistory = (cid: string) => {
     setShowHistory(showHistory === cid ? null : cid);
+  };
+
+  const handleDeletePlan = (planId: string, planVersion: number, capabilityName: string) => {
+    deleteRoadmapPlan(planId);
+    toast({
+      title: "Plan Deleted",
+      description: `Roadmap plan v${planVersion} for ${capabilityName} has been deleted.`,
+    });
   };
 
   /** Only pass the expected props to <TableRow> and use versionLabel/faded as option flags */
@@ -88,45 +107,65 @@ const RoadmapManagement = () => {
         </TableCell>
       ))}
       <TableCell className="text-center">
-        {!versionLabel && (
-          plan
-            ? (
-              <div className="flex flex-wrap gap-2 items-center justify-center">
+        {plan && (
+          <div className="flex flex-wrap gap-2 items-center justify-center">
+            {!versionLabel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openCreatePlan(cap.id)}
+                className="px-2"
+              >
+                <Edit className="h-4 w-4 mr-1" /> Edit
+              </Button>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => openCreatePlan(cap.id)}
-                  className="px-2"
+                  className="px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
-                  <Edit className="h-4 w-4 mr-1" /> Edit
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
                 </Button>
-                {getRoadmapHistory(cap.id).length > 1 && (
-                  <Button
-                    variant={showHistory === cap.id ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => toggleHistory(cap.id)}
-                    className={classNames(
-                      "px-2",
-                      showHistory === cap.id
-                        ? "ring-2 ring-blue-200"
-                        : ""
-                    )}
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Roadmap Plan</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this roadmap plan{versionLabel ? ` (${versionLabel})` : ''} for "{cap.name}"? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDeletePlan(plan.id, plan.version, cap.name)}
+                    className="bg-red-600 hover:bg-red-700"
                   >
-                    <History className="h-4 w-4 mr-1" />
-                    {showHistory === cap.id ? "Hide" : "Show"} History
-                  </Button>
-                )}
-              </div>
-            ) : (
+                    Delete Plan
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            {!versionLabel && getRoadmapHistory(cap.id).length > 1 && (
               <Button
+                variant={showHistory === cap.id ? "secondary" : "outline"}
                 size="sm"
-                onClick={() => openCreatePlan(cap.id)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={() => toggleHistory(cap.id)}
+                className={classNames(
+                  "px-2",
+                  showHistory === cap.id
+                    ? "ring-2 ring-blue-200"
+                    : ""
+                )}
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Create Plan
+                <History className="h-4 w-4 mr-1" />
+                {showHistory === cap.id ? "Hide" : "Show"} History
               </Button>
-            )
+            )}
+          </div>
         )}
       </TableCell>
     </TableRow>
