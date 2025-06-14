@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, History, Maximize, Minimize } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, History, Maximize, Minimize, Search } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
@@ -31,12 +33,15 @@ export default function RoadmapView() {
     rag: true,
     status: true,
     history: true,
+    milestone: true,
   });
   const [isFullView, setIsFullView] = useState(false);
+  const [capabilityFilter, setCapabilityFilter] = useState<string>("");
+  const [selectedCapability, setSelectedCapability] = useState<string>("all");
   const isMobile = useIsMobile();
   const now = new Date();
 
-  const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
+  const handleColumnToggle = (column: 'rag' | 'status' | 'history' | 'milestone') => {
     setVisibleColumns(prev => ({
       ...prev,
       [column]: !prev[column]
@@ -46,6 +51,13 @@ export default function RoadmapView() {
   const toggleFullView = () => {
     setIsFullView(prev => !prev);
   };
+
+  // Filter capabilities based on search and selection
+  const filteredCapabilities = data.capabilities.filter(capability => {
+    const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
+    const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
+    return matchesSearch && matchesSelection;
+  });
 
   // Export to PDF function with improved error handling
   const handleExportPDF = async () => {
@@ -98,7 +110,7 @@ export default function RoadmapView() {
         // Render the PDF export view
         root.render(
           <PDFExportView
-            capabilities={data.capabilities}
+            capabilities={filteredCapabilities}
             getActiveRoadmapPlan={getActiveRoadmapPlan}
             parsePlanDate={parsePlanDate}
             phases={phases}
@@ -201,6 +213,9 @@ export default function RoadmapView() {
     if (visibleColumns.status) {
       conditionalColumns.push({ label: 'Status', width: Math.round(112 * scaleFactor) });
     }
+    if (visibleColumns.milestone) {
+      conditionalColumns.push({ label: 'Milestone', width: Math.round(120 * scaleFactor) });
+    }
     if (visibleColumns.history) {
       conditionalColumns.push({ label: 'History', width: Math.round(64 * scaleFactor) });
     }
@@ -228,7 +243,7 @@ export default function RoadmapView() {
   // Get all plans to determine the full scrollable date range
   const getAllPlanDates = () => {
     const dates: Date[] = [];
-    data.capabilities.forEach((cap) => {
+    filteredCapabilities.forEach((cap) => {
       const activePlan = getActiveRoadmapPlan(cap.id);
       if (activePlan) {
         // Add all plan dates
@@ -319,7 +334,7 @@ export default function RoadmapView() {
 
   // Get plans with capability data (only active plans unless history is toggled)
   const plansWithCapability: Array<{ capability: any; plan: any; isActive: boolean }> = [];
-  data.capabilities.forEach((cap) => {
+  filteredCapabilities.forEach((cap) => {
     const activePlan = getActiveRoadmapPlan(cap.id);
     if (activePlan) {
       plansWithCapability.push({ capability: cap, plan: activePlan, isActive: true });
@@ -410,6 +425,46 @@ export default function RoadmapView() {
 
   return (
     <div className="space-y-6 flex flex-col">
+      {/* Filters Section */}
+      <Card className="order-0">
+        <CardHeader className={isMobile ? 'p-3' : ''}>
+          <CardTitle className={textSizes.title}>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className={isMobile ? 'p-3' : ''}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Capability Search */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search capabilities..."
+                  value={capabilityFilter}
+                  onChange={(e) => setCapabilityFilter(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {/* Capability Dropdown */}
+            <div className="w-full sm:w-48">
+              <Select value={selectedCapability} onValueChange={setSelectedCapability}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select capability" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Capabilities</SelectItem>
+                  {data.capabilities.map((capability) => (
+                    <SelectItem key={capability.id} value={capability.id}>
+                      {capability.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {plansWithCapability.length > 0 ? (
         <Card className={`overflow-hidden order-1 ${isFullView ? 'fixed inset-4 z-50 bg-white' : ''}`}>
           <CardHeader className={isMobile ? 'p-3' : ''}>
@@ -454,7 +509,7 @@ export default function RoadmapView() {
                 </div>
                 
                 {/* Data Rows */}
-                {data.capabilities.map((capability) => {
+                {filteredCapabilities.map((capability) => {
                   const activePlan = getActiveRoadmapPlan(capability.id);
                   const history = getRoadmapHistory(capability.id);
                   const hasHistory = history.length > 1;
@@ -464,6 +519,11 @@ export default function RoadmapView() {
                   
                   return plansToShow.map((plan, planIndex) => {
                     const isActive = planIndex === 0;
+                    // Find milestone for this capability
+                    const milestone = data.milestones.find(m => 
+                      m.capabilityIds.includes(capability.id)
+                    );
+                    
                     return (
                       <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: currentRowHeight }}>
                         {/* Capability Name with Version */}
@@ -498,6 +558,15 @@ export default function RoadmapView() {
                         {visibleColumns.status && (
                           <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
                             {capability.status}
+                          </div>
+                        )}
+                        
+                        {/* Technical Milestone */}
+                        {visibleColumns.milestone && (
+                          <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Milestone')?.width || 120 }}>
+                            <span className="truncate" title={milestone?.name || 'No milestone'}>
+                              {milestone?.name || '-'}
+                            </span>
                           </div>
                         )}
                         
@@ -606,7 +675,10 @@ export default function RoadmapView() {
               <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No roadmap data available</h3>
               <p className="text-sm">
-                Create capabilities and their roadmap plans to see the visual timeline
+                {capabilityFilter || selectedCapability !== "all" 
+                  ? "No capabilities match the current filters"
+                  : "Create capabilities and their roadmap plans to see the visual timeline"
+                }
               </p>
             </div>
           </CardContent>
