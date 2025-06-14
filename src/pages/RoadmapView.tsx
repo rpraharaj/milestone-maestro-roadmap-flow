@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,41 +140,43 @@ export default function RoadmapView() {
                 return (
                   <div key={capability.id} className="bg-white">
                     {plansToShow.map(({ plan, isActive }, planIndex) => (
-                      <div key={plan.id} className="flex items-center py-4 hover:bg-gray-50">
+                      <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
                         {/* Capability Column: reduced width */}
-                        <div className="w-56 flex-shrink-0 px-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
-                                {capability.name}
-                                {!isActive && (
-                                  <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
-                                )}
-                              </h3>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
-                                    capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
-                                    'border-green-200 text-green-800 bg-green-50'
-                                  }
-                                >
-                                  {capability.ragStatus}
-                                </Badge>
-                                <span className="text-xs text-gray-500">{capability.status}</span>
-                              </div>
-                            </div>
-                            {planIndex === 0 && hasHistory && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleHistory(capability.id)}
-                                className="text-xs"
+                        <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
+                          <div>
+                            {/* Capability name and badges */}
+                            <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
+                              {capability.name}
+                              {!isActive && (
+                                <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
+                              )}
+                            </h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
+                                  capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
+                                  'border-green-200 text-green-800 bg-green-50'
+                                }
                               >
-                                <History className="h-3 w-3 mr-1" />
-                                {showHistory[capability.id] ? 'Hide' : 'Show'} History
-                              </Button>
+                                {capability.ragStatus}
+                              </Badge>
+                              <span className="text-xs text-gray-500">{capability.status}</span>
+                            </div>
+                            {/* Show/Hide History button on a separate row below metadata */}
+                            {planIndex === 0 && hasHistory && (
+                              <div className="mt-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleHistory(capability.id)}
+                                  className="text-xs w-full flex justify-start"
+                                >
+                                  <History className="h-3 w-3 mr-1" />
+                                  {showHistory[capability.id] ? 'Hide' : 'Show'} History
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -246,5 +247,3 @@ export default function RoadmapView() {
     </div>
   );
 }
-
-// ... file ends here ...
