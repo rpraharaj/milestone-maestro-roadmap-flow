@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
   const [formData, setFormData] = useState({
     name: "",
     date: new Date(),
+    capabilityIds: [] as string[],
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -40,11 +42,13 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
       setFormData({
         name: milestone.name,
         date: milestone.date,
+        capabilityIds: milestone.capabilityIds || [],
       });
     } else {
       setFormData({
         name: "",
         date: new Date(),
+        capabilityIds: [],
       });
     }
   }, [milestone, isOpen]);
