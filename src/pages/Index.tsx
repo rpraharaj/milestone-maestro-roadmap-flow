@@ -210,17 +210,9 @@ const Index = () => {
                   </div>
                   {capabilitiesWithPlans.map(({ capability }) => (
                     <div key={capability.id} className="h-16 flex flex-col justify-center p-3 border-b border-gray-100">
-                      <h3 className="font-medium text-gray-900 truncate text-sm mb-1">
+                      <h3 className="font-medium text-gray-900 truncate text-sm">
                         {capability.name}
                       </h3>
-                      <div className="flex gap-1">
-                        <Badge className={`${getRAGStatusColor(capability.ragStatus)} text-xs`}>
-                          {capability.ragStatus}
-                        </Badge>
-                        <Badge variant="outline" className={`${getStatusColor(capability.status)} text-xs`}>
-                          {capability.status}
-                        </Badge>
-                      </div>
                     </div>
                   ))}
                 </div>
