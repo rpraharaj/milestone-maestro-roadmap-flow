@@ -5,16 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { History, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
-import TimelineHeader from "@/components/roadmap/TimelineHeader";
-import TimelineRow from "@/components/roadmap/TimelineRow";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 
-const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // Sum of px widths for the fixed columns
+const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // 104px for fixed columns
 
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
-  // Timeline range: 1 month before, 11 months after today
   const now = new Date();
   const timelineDefaultStart = startOfMonth(subMonths(now, 1));
   const timelineDefaultEnd = endOfMonth(addMonths(now, 11));
@@ -30,7 +27,6 @@ export default function RoadmapView() {
     return fallback;
   }
 
-  // All plans for active and historical view
   const allPlans = useMemo(() => {
     const plans: Array<{ capability: any; plan: any; isActive: boolean }> = [];
     data.capabilities.forEach(capability => {
@@ -48,7 +44,6 @@ export default function RoadmapView() {
     return plans;
   }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
 
-  // Timeline window/month columns
   const visibleTimelineStart = timelineDefaultStart;
   const visibleTimelineEnd = timelineDefaultEnd;
   const actualContentStart = timelineDefaultStart;
@@ -60,9 +55,7 @@ export default function RoadmapView() {
   const MONTH_WIDTH = 120;
   const TIMELINE_MIN_HEIGHT = 140;
   const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
-  const timelineViewportWidth = contentMonths.length * MONTH_WIDTH; // always the same now
 
-  // Position for each bar
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     const clampedStart = dateMax([startDate, actualContentStart]);
     const clampedEnd = dateMin([endDate, actualContentEnd]);
@@ -80,7 +73,7 @@ export default function RoadmapView() {
     };
   };
 
-  // Scroll to today on mount for timeline
+  // Scroll to today on mount for timeline (for timeline section only)
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!scrollAreaRef.current) return;
@@ -91,7 +84,6 @@ export default function RoadmapView() {
     scrollAreaRef.current.scrollLeft = scrollToPx;
   }, [now, contentMonths.length]);
 
-  // Phases for the timeline bars
   const phases = [
     { key: 'requirement', label: 'REQ', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
     { key: 'design', label: 'DES', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
@@ -100,7 +92,6 @@ export default function RoadmapView() {
     { key: 'uat', label: 'UAT', color: 'bg-red-500', startField: 'uatStartDate', endField: 'uatEndDate' },
   ];
 
-  // Table column widths (px)
   const columns = [
     { label: 'Capability', width: 192 },  // w-48
     { label: 'RAG', width: 48 },          // w-12
@@ -116,24 +107,25 @@ export default function RoadmapView() {
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-
-            {/* Header: fixed columns + scrollable months */}
+            {/* Header: flex row, left fixed columns header, right months header (scrollable) */}
             <div className="flex border-b bg-gray-50 sticky top-0 z-10">
-              {/* Fixed left columns header */}
-              {columns.map(col => (
-                <div
-                  key={col.label}
-                  className="text-sm font-medium text-gray-600 flex items-center border-r border-gray-200 px-3"
-                  style={{ minWidth: col.width, maxWidth: col.width, width: col.width }}
-                >
-                  {col.label}
-                </div>
-              ))}
-              {/* Timeline header months */}
+              {/* Fixed columns header */}
+              <div className="flex" style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}>
+                {columns.map(col => (
+                  <div
+                    key={col.label}
+                    className="text-sm font-medium text-gray-600 flex items-center border-r border-gray-200 px-3"
+                    style={{ minWidth: col.width, maxWidth: col.width, width: col.width, height: 48 }}
+                  >
+                    {col.label}
+                  </div>
+                ))}
+              </div>
+              {/* Timeline months (header) */}
               <div className="flex-1 min-w-0 overflow-x-auto" style={{}}>
                 <div
                   className="flex"
-                  style={{ minWidth: `${timelineContentWidth}px`, width: `${timelineContentWidth}px` }}
+                  style={{ minWidth: `${timelineContentWidth}px`, width: `${timelineContentWidth}px`, height: 48 }}
                 >
                   {contentMonths.map(month => (
                     <div
@@ -142,6 +134,7 @@ export default function RoadmapView() {
                       style={{
                         minWidth: `${MONTH_WIDTH}px`,
                         width: `${MONTH_WIDTH}px`,
+                        height: 48
                       }}
                     >
                       {format(month, "MMM yyyy")}
@@ -150,10 +143,10 @@ export default function RoadmapView() {
                 </div>
               </div>
             </div>
-            {/* Timeline content (body): */}
-            <div className="divide-y divide-gray-200">
-              {/* Wrap in scroll container for TIMELINE only */}
-              <div style={{ width: "100%", overflowX: "auto", minHeight: TIMELINE_MIN_HEIGHT }} ref={scrollAreaRef}>
+            {/* Timeline content: fixed left columns (all rows), and timeline scroll area */}
+            <div className="flex" style={{ width: "100%" }}>
+              {/* Fixed columns: render for each capability */}
+              <div className="flex flex-col" style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}>
                 {data.capabilities.map(capability => {
                   const activePlan = getActiveRoadmapPlan(capability.id);
                   const history = getRoadmapHistory(capability.id);
@@ -163,106 +156,120 @@ export default function RoadmapView() {
                     ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
                   ];
                   if (plansToShow.length === 0) return null;
-                  return (
-                    <div className="flex" key={capability.id}>
-                      {/* Fixed left columns (row) */}
-                      {plansToShow.map(({ plan, isActive }, planIndex) => (
-                        <div
-                          key={plan.id}
-                          className="flex"
-                          style={{
-                            minWidth:
-                              columns.reduce((sum, c) => sum + c.width, 0),
-                            maxWidth:
-                              columns.reduce((sum, c) => sum + c.width, 0),
-                            width: columns.reduce((sum, c) => sum + c.width, 0),
-                          }}
-                        >
-                          {/* Name column */}
-                          <div className="w-48 flex items-center px-3 h-12 border-b border-gray-100">
-                            <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
-                              {capability.name}
-                            </span>
-                            {!isActive && (
-                              <span className="ml-2 text-xs text-gray-400 align-middle">v{plan.version}</span>
-                            )}
-                          </div>
-                          {/* RAG column */}
-                          <div className="w-12 flex items-center justify-center h-12 border-b border-gray-100">
-                            {/* ragDot from TimelineRow */}
-                            {(() => {
-                              let color = "bg-green-500";
-                              if (capability.ragStatus === "Red") color = "bg-red-500";
-                              else if (capability.ragStatus === "Amber") color = "bg-amber-400";
-                              return (
-                                <span className={`inline-block h-3 w-3 rounded-full ${color}`} title={capability.ragStatus} />
-                              );
-                            })()}
-                          </div>
-                          {/* Status column */}
-                          <div className="w-28 flex items-center h-12 text-xs text-gray-600 border-b border-gray-100">
-                            {capability.status}
-                          </div>
-                          {/* History icon column */}
-                          <div className="w-16 flex items-center justify-center h-12 border-b border-gray-100">
-                            {planIndex === 0 && hasHistory && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  setShowHistory(prev => ({
-                                    ...prev,
-                                    [capability.id]: !prev[capability.id]
-                                  }))
-                                }
-                                className="h-8 w-8 p-0"
-                                title={showHistory[capability.id] ? "Hide History" : "Show History"}
-                              >
-                                <History className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {/* Scrollable timeline cells (phases bar) */}
+                  return plansToShow.map(({ plan, isActive }, planIndex) => (
+                    <div
+                      key={plan.id}
+                      className="flex"
+                      style={{
+                        minWidth: TIMELINE_LEFT_WIDTH,
+                        maxWidth: TIMELINE_LEFT_WIDTH,
+                        width: TIMELINE_LEFT_WIDTH,
+                        height: 48
+                      }}
+                    >
+                      {/* Name column */}
+                      <div className="w-48 flex items-center px-3 h-12 border-b border-gray-100">
+                        <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
+                          {capability.name}
+                        </span>
+                        {!isActive && (
+                          <span className="ml-2 text-xs text-gray-400 align-middle">v{plan.version}</span>
+                        )}
+                      </div>
+                      {/* RAG column */}
+                      <div className="w-12 flex items-center justify-center h-12 border-b border-gray-100">
+                        {(() => {
+                          let color = "bg-green-500";
+                          if (capability.ragStatus === "Red") color = "bg-red-500";
+                          else if (capability.ragStatus === "Amber") color = "bg-amber-400";
+                          return (
+                            <span className={`inline-block h-3 w-3 rounded-full ${color}`} title={capability.ragStatus} />
+                          );
+                        })()}
+                      </div>
+                      {/* Status column */}
+                      <div className="w-28 flex items-center h-12 text-xs text-gray-600 border-b border-gray-100">
+                        {capability.status}
+                      </div>
+                      {/* History icon column */}
+                      <div className="w-16 flex items-center justify-center h-12 border-b border-gray-100">
+                        {planIndex === 0 && hasHistory && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setShowHistory(prev => ({
+                                ...prev,
+                                [capability.id]: !prev[capability.id]
+                              }))
+                            }
+                            className="h-8 w-8 p-0"
+                            title={showHistory[capability.id] ? "Hide History" : "Show History"}
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ));
+                })}
+              </div>
+              {/* Timeline: horizontally scrollable */}
+              <div
+                style={{
+                  minWidth: 0,
+                  width: "100%",
+                  overflowX: "auto",
+                  maxWidth: `calc(100% - ${TIMELINE_LEFT_WIDTH}px)`,
+                }}
+                ref={scrollAreaRef}
+              >
+                <div>
+                  {data.capabilities.map(capability => {
+                    const activePlan = getActiveRoadmapPlan(capability.id);
+                    const history = getRoadmapHistory(capability.id);
+                    const plansToShow = [
+                      ...(activePlan ? [{ plan: activePlan, isActive: true }] : []),
+                      ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
+                    ];
+                    if (plansToShow.length === 0) return null;
+                    return plansToShow.map(({ plan, isActive }) => (
                       <div
-                        className="flex-1 relative"
+                        className="relative flex items-center"
+                        key={plan.id}
                         style={{
                           minWidth: `${timelineContentWidth}px`,
                           width: `${timelineContentWidth}px`,
                           maxWidth: `${timelineContentWidth}px`,
-                          display: "flex",
-                          alignItems: "center",
+                          height: 48
                         }}
                       >
                         {/* Timeline bars for each plan */}
-                        {plansToShow.map(({ plan, isActive }) => (
-                          <div className="relative w-full h-12 flex items-center" key={plan.id}>
-                            {phases.map(phase => {
-                              const startDate = parsePlanDate(plan[phase.startField]);
-                              const endDate = parsePlanDate(plan[phase.endField]);
-                              const position = getPhasePosition(startDate, endDate);
-                              return (
-                                <div
-                                  key={phase.key}
-                                  className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
-                                  style={{
-                                    left: position.left,
-                                    width: position.width,
-                                    top: 0,
-                                  }}
-                                  title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
-                                >
-                                  <div className="text-xs text-white font-medium p-1 truncate">{phase.label}</div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
+                        <div className="relative w-full h-12 flex items-center">
+                          {phases.map(phase => {
+                            const startDate = parsePlanDate(plan[phase.startField]);
+                            const endDate = parsePlanDate(plan[phase.endField]);
+                            const position = getPhasePosition(startDate, endDate);
+                            return (
+                              <div
+                                key={phase.key}
+                                className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                                style={{
+                                  left: position.left,
+                                  width: position.width,
+                                  top: 0,
+                                }}
+                                title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
+                              >
+                                <div className="text-xs text-white font-medium p-1 truncate">{phase.label}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ));
+                  })}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -292,3 +299,5 @@ export default function RoadmapView() {
     </div>
   );
 }
+
+// NOTE: This file is now even longer. You should consider asking to refactor RoadmapView.tsx to smaller components for maintainability!
