@@ -67,8 +67,8 @@ export default function RoadmapView() {
   // but CLAMP all bars to actualContentStart and actualContentEnd
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     // Clamp phase start and end to visible window
-    const clampedStart = max([startDate, actualContentStart]);
-    const clampedEnd = min([endDate, actualContentEnd]);
+    const clampedStart = dateMax([startDate, actualContentStart]);
+    const clampedEnd = dateMin([endDate, actualContentEnd]);
     if (clampedEnd < clampedStart) {
       // phase does not appear in window
       return { left: "0%", width: "0%" };
