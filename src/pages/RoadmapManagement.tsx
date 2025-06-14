@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,8 +84,8 @@ const RoadmapManagement = () => {
         "transition-all duration-200 border-b",
         faded
           ? "bg-gray-50/50 text-gray-600"
-          : "hover:bg-blue-50/50 hover:shadow-sm",
-        versionLabel && "border-l-2 border-blue-300"
+          : "hover:bg-gray-50/50 hover:shadow-sm",
+        versionLabel && "border-l-2 border-gray-300"
       )}
     >
       <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/95 backdrop-blur-sm min-w-[160px] py-2 px-3">
@@ -94,7 +93,7 @@ const RoadmapManagement = () => {
         {versionLabel && (
           <Badge
             variant="outline"
-            className="text-xs border-blue-400 bg-blue-50 text-blue-700 px-1.5 py-0.5"
+            className="text-xs border-gray-400 bg-gray-50 text-gray-700 px-1.5 py-0.5"
           >
             {versionLabel}
           </Badge>
@@ -159,7 +158,7 @@ const RoadmapManagement = () => {
                 className={classNames(
                   "h-8 w-8 p-0",
                   showHistory === cap.id
-                    ? "ring-1 ring-blue-300"
+                    ? "ring-1 ring-gray-300"
                     : ""
                 )}
                 title={showHistory === cap.id ? "Hide History" : "Show History"}
@@ -248,7 +247,7 @@ const RoadmapManagement = () => {
                           <Button
                             size="sm"
                             onClick={() => openCreatePlan(cap.id)}
-                            className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                            className="h-8 px-3 text-xs"
                             title="Create Plan"
                           >
                             <Plus className="h-3 w-3 mr-1" />

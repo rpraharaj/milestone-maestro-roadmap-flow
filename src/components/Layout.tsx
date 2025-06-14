@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -104,7 +103,7 @@ const Layout = () => {
                   className={cn(
                     "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
                     location.pathname === item.href
-                      ? "bg-blue-100 text-blue-900"
+                      ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                     sidebarCollapsed && "justify-center"
                   )}
@@ -115,7 +114,7 @@ const Layout = () => {
                     className={cn(
                       "mr-3 h-5 w-5 transition-all",
                       location.pathname === item.href
-                        ? "text-blue-500"
+                        ? "text-gray-500"
                         : "text-gray-400 group-hover:text-gray-500",
                       sidebarCollapsed ? "mr-0" : "mr-3"
                     )}

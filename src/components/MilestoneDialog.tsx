@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -144,7 +143,7 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit">
               {milestone ? "Update" : "Add"} Milestone
             </Button>
           </div>

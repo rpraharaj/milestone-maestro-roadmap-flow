@@ -1,4 +1,3 @@
-
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,29 +13,29 @@ const Index = () => {
       title: "Total Capabilities",
       value: data.capabilities.length,
       icon: Target,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
     },
     {
       title: "Active Milestones",
       value: data.milestones.length,
       icon: Calendar,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
     },
     {
       title: "Roadmap Plans",
       value: data.roadmapPlans.filter(plan => plan.isActive).length,
       icon: Map,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
     },
     {
       title: "Completed Capabilities",
       value: data.capabilities.filter(cap => cap.status === 'Completed').length,
       icon: BarChart3,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
+      color: "text-gray-600",
+      bgColor: "bg-gray-100",
     },
   ];
 
@@ -73,35 +72,35 @@ const Index = () => {
     {
       key: 'requirement',
       label: 'Req',
-      color: 'bg-blue-500',
+      color: 'bg-gray-500',
       startField: 'requirementStartDate',
       endField: 'requirementEndDate',
     },
     {
       key: 'design',
       label: 'Design',
-      color: 'bg-green-500',
+      color: 'bg-gray-600',
       startField: 'designStartDate',
       endField: 'designEndDate',
     },
     {
       key: 'dev',
       label: 'Dev',
-      color: 'bg-yellow-500',
+      color: 'bg-gray-700',
       startField: 'devStartDate',
       endField: 'devEndDate',
     },
     {
       key: 'cst',
       label: 'CST',
-      color: 'bg-orange-500',
+      color: 'bg-gray-800',
       startField: 'cstStartDate',
       endField: 'cstEndDate',
     },
     {
       key: 'uat',
       label: 'UAT',
-      color: 'bg-purple-500',
+      color: 'bg-black',
       startField: 'uatStartDate',
       endField: 'uatEndDate',
     },

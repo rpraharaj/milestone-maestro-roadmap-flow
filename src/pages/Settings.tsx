@@ -244,7 +244,7 @@ export default function Settings() {
             Export your project data for backup or sharing purposes.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button onClick={handleExportJSON} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleExportJSON}>
               <FileText className="h-4 w-4 mr-2" />
               Export as JSON
             </Button>
@@ -296,7 +296,6 @@ export default function Settings() {
             <Button 
               onClick={handleImportJSON} 
               disabled={!importText.trim()}
-              className="bg-green-600 hover:bg-green-700"
             >
               <Upload className="h-4 w-4 mr-2" />
               Import Data

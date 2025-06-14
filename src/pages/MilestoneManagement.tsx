@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -45,16 +46,15 @@ const MilestoneManagement = () => {
     } else if (isBefore(milestone, addDays(today, 30))) {
       return { status: "Upcoming", color: "bg-yellow-100 text-yellow-800" };
     } else {
-      return { status: "Future", color: "bg-blue-100 text-blue-800" };
+      return { status: "Future", color: "bg-gray-200 text-gray-800" };
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Removed page headline/description - now handled by Layout */}
       {/* Right-aligned add button */}
       <div className="flex justify-end mb-2">
-        <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-2" />
           Add Milestone
         </Button>
@@ -90,8 +90,8 @@ const MilestoneManagement = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <Calendar className="h-6 w-6 text-blue-600" />
+                    <div className="p-3 bg-gray-100 rounded-full">
+                      <Calendar className="h-6 w-6 text-gray-600" />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
