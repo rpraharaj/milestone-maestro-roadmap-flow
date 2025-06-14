@@ -160,12 +160,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                          key={`${phase.startField}-${formData[phase.startField as keyof typeof formData].getTime()}`}
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
-                          month={formData[phase.startField as keyof typeof formData]}
-                          onMonthChange={() => {}}
+                          defaultMonth={formData[phase.startField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
@@ -188,12 +186,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                          key={`${phase.endField}-${formData[phase.endField as keyof typeof formData].getTime()}`}
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
-                          month={formData[phase.endField as keyof typeof formData]}
-                          onMonthChange={() => {}}
+                          defaultMonth={formData[phase.endField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
