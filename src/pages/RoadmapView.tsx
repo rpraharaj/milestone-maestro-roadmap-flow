@@ -106,113 +106,115 @@ export default function RoadmapView() {
           </CardHeader>
           {/* -- Wrap the timeline table in a horizontal ScrollArea -- */}
           <CardContent className="p-0">
-            <ScrollArea className="w-full">
+            <ScrollArea className="w-full overflow-x-auto">
               {/* Timeline Header */}
-              <div className="border-b bg-gray-50 p-4 min-w-[700px]">
-                <div className="flex">
-                  {/* Make capability column width smaller */}
-                  <div className="w-56 flex-shrink-0"></div>
-                  <div className="flex-1 relative">
-                    <div className="flex">
-                      {months.map((month, index) => (
-                        <div
-                          key={month.toISOString()}
-                          className="flex-1 text-center text-sm font-medium text-gray-600 border-l border-gray-200 px-2"
-                          style={{ minWidth: '60px' }}
-                        >
-                          {format(month, "MMM yyyy")}
-                        </div>
-                      ))}
+              <div className="w-max">
+                <div className="border-b bg-gray-50 p-4">
+                  <div className="flex">
+                    {/* Make capability column width smaller */}
+                    <div className="w-56 flex-shrink-0"></div>
+                    <div className="flex-1 relative">
+                      <div className="flex">
+                        {months.map((month, index) => (
+                          <div
+                            key={month.toISOString()}
+                            className="flex-1 text-center text-sm font-medium text-gray-600 border-l border-gray-200 px-2"
+                            style={{ minWidth: '60px' }}
+                          >
+                            {format(month, "MMM yyyy")}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              {/* Timeline Content */}
-              <div className="divide-y divide-gray-200 min-w-[700px]">
-                {data.capabilities.map(capability => {
-                  const activePlan = getActiveRoadmapPlan(capability.id);
-                  const history = getRoadmapHistory(capability.id);
-                  const hasHistory = history.length > 1;
-                  const plansToShow = [
-                    ...(activePlan ? [{ plan: activePlan, isActive: true }] : []),
-                    ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
-                  ];
-                  if (plansToShow.length === 0) return null;
+                {/* Timeline Content */}
+                <div className="divide-y divide-gray-200">
+                  {data.capabilities.map(capability => {
+                    const activePlan = getActiveRoadmapPlan(capability.id);
+                    const history = getRoadmapHistory(capability.id);
+                    const hasHistory = history.length > 1;
+                    const plansToShow = [
+                      ...(activePlan ? [{ plan: activePlan, isActive: true }] : []),
+                      ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
+                    ];
+                    if (plansToShow.length === 0) return null;
 
-                  return (
-                    <div key={capability.id} className="bg-white">
-                      {plansToShow.map(({ plan, isActive }, planIndex) => (
-                        <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
-                          {/* Capability Column: reduced width */}
-                          <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
-                            <div>
-                              {/* Capability name and badges */}
-                              <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
-                                {capability.name}
-                                {!isActive && (
-                                  <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
-                                )}
-                              </h3>
-                              <div className="flex items-center space-x-2 mt-1">
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
-                                    capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
-                                    'border-green-200 text-green-800 bg-green-50'
-                                  }
-                                >
-                                  {capability.ragStatus}
-                                </Badge>
-                                <span className="text-xs text-gray-500">{capability.status}</span>
-                              </div>
-                              {/* Show/Hide History button on a separate row below metadata */}
-                              {planIndex === 0 && hasHistory && (
-                                <div className="mt-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => toggleHistory(capability.id)}
-                                    className="text-xs w-full flex justify-start"
+                    return (
+                      <div key={capability.id} className="bg-white">
+                        {plansToShow.map(({ plan, isActive }, planIndex) => (
+                          <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
+                            {/* Capability Column: reduced width */}
+                            <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
+                              <div>
+                                {/* Capability name and badges */}
+                                <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
+                                  {capability.name}
+                                  {!isActive && (
+                                    <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
+                                  )}
+                                </h3>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
+                                      capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
+                                      'border-green-200 text-green-800 bg-green-50'
+                                    }
                                   >
-                                    <History className="h-3 w-3 mr-1" />
-                                    {showHistory[capability.id] ? 'Hide' : 'Show'} History
-                                  </Button>
+                                    {capability.ragStatus}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500">{capability.status}</span>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                          {/* Timeline Column: increased width by flex-grow */}
-                          <div className="flex-1 relative h-8 px-4 min-w-0">
-                            <div className="relative h-full w-full">
-                              {phases.map(phase => {
-                                const startDate = plan[phase.startField as keyof typeof plan] as Date;
-                                const endDate = plan[phase.endField as keyof typeof plan] as Date;
-                                const position = getPhasePosition(startDate, endDate);
-                                return (
-                                  <div
-                                    key={phase.key}
-                                    className={`absolute h-6 rounded ${phase.color} ${isActive ? '' : 'opacity-60'} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
-                                    style={{
-                                      left: position.left,
-                                      width: position.width,
-                                      top: '6px',
-                                    }}
-                                    title={`${phase.label}: ${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`}
-                                  >
-                                    <div className="text-xs text-white font-medium p-1 truncate">
-                                      {phase.label}
-                                    </div>
+                                {/* Show/Hide History button on a separate row below metadata */}
+                                {planIndex === 0 && hasHistory && (
+                                  <div className="mt-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleHistory(capability.id)}
+                                      className="text-xs w-full flex justify-start"
+                                    >
+                                      <History className="h-3 w-3 mr-1" />
+                                      {showHistory[capability.id] ? 'Hide' : 'Show'} History
+                                    </Button>
                                   </div>
-                                );
-                              })}
+                                )}
+                              </div>
+                            </div>
+                            {/* Timeline Column: increased width by flex-grow */}
+                            <div className="flex-1 relative h-8 px-4 min-w-0">
+                              <div className="relative h-full w-full">
+                                {phases.map(phase => {
+                                  const startDate = plan[phase.startField as keyof typeof plan] as Date;
+                                  const endDate = plan[phase.endField as keyof typeof plan] as Date;
+                                  const position = getPhasePosition(startDate, endDate);
+                                  return (
+                                    <div
+                                      key={phase.key}
+                                      className={`absolute h-6 rounded ${phase.color} ${isActive ? '' : 'opacity-60'} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+                                      style={{
+                                        left: position.left,
+                                        width: position.width,
+                                        top: '6px',
+                                      }}
+                                      title={`${phase.label}: ${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`}
+                                    >
+                                      <div className="text-xs text-white font-medium p-1 truncate">
+                                        {phase.label}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </ScrollArea>
           </CardContent>
