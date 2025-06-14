@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+
+import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
@@ -6,6 +7,7 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import TimelineFixedColumns from "@/components/roadmap/TimelineFixedColumns";
 import VisualTimeline from "@/components/roadmap/VisualTimeline";
+import { useRoadmapPlanData } from "@/hooks/useRoadmapPlanData";
 
 const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // 104px for fixed columns
 const MONTH_WIDTH = 120;
@@ -28,22 +30,13 @@ export default function RoadmapView() {
     return fallback;
   }
 
-  const allPlans = useMemo(() => {
-    const plans: Array<{ capability: any; plan: any; isActive: boolean }> = [];
-    data.capabilities.forEach((capability) => {
-      const activePlan = getActiveRoadmapPlan(capability.id);
-      if (activePlan) {
-        plans.push({ capability, plan: activePlan, isActive: true });
-      }
-      if (showHistory[capability.id]) {
-        const history = getRoadmapHistory(capability.id);
-        history.slice(1).forEach((plan) => {
-          plans.push({ capability, plan, isActive: false });
-        });
-      }
-    });
-    return plans;
-  }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
+  // Use refactored plan data hook
+  const allPlans = useRoadmapPlanData({
+    capabilities: data.capabilities,
+    getActiveRoadmapPlan,
+    getRoadmapHistory,
+    showHistory,
+  });
 
   const visibleTimelineStart = timelineDefaultStart;
   const visibleTimelineEnd = timelineDefaultEnd;
@@ -52,7 +45,6 @@ export default function RoadmapView() {
 
   const headerMonths = eachMonthOfInterval({ start: visibleTimelineStart, end: visibleTimelineEnd });
   const contentMonths = headerMonths;
-
   const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
 
   const getPhasePosition = (startDate: Date, endDate: Date) => {
@@ -95,9 +87,7 @@ export default function RoadmapView() {
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Big flex row: left columns fixed, right timeline horizontally scrollable */}
             <div className="flex w-full">
-              {/* Fixed left columns */}
               <TimelineFixedColumns
                 capabilities={data.capabilities}
                 getActiveRoadmapPlan={getActiveRoadmapPlan}
@@ -113,7 +103,6 @@ export default function RoadmapView() {
                 columns={columns}
                 rowHeight={48}
               />
-              {/* Scrollable timeline area */}
               <VisualTimeline
                 capabilities={data.capabilities}
                 getActiveRoadmapPlan={getActiveRoadmapPlan}
@@ -155,5 +144,3 @@ export default function RoadmapView() {
     </div>
   );
 }
-
-// RoadmapView.tsx has now been refactored for maintainability and readability!
