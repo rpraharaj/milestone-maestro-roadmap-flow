@@ -357,8 +357,8 @@ export default function RoadmapView() {
   // Calculate initial scroll position to show default view (1 month before current + 11 after)
   const monthsBeforeDefault = eachMonthOfInterval({ 
     start: fullTimelineStart, 
-    end: subMonths(defaultVisibleStart, 1) 
-  });
+    end: defaultVisibleStart 
+  }).slice(0, -1); // Remove the last month to exclude defaultVisibleStart itself
   const initialScrollLeft = monthsBeforeDefault.length * currentMonthWidth;
 
   console.log('Roadmap Timeline Debug:', {

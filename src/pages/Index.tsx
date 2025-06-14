@@ -182,19 +182,14 @@ const Index = () => {
     end: fullTimelineEnd
   });
 
-  // Generate default view months for calculating scroll position
-  const defaultViewMonths = eachMonthOfInterval({
-    start: defaultVisibleStart,
-    end: defaultVisibleEnd
-  });
-
   const timelineContentWidth = allMonths.length * MONTH_WIDTH;
 
   // Calculate initial scroll position to show default view (1 month before current + 11 after)
+  // Fixed: Change the end date to defaultVisibleStart instead of subMonths(defaultVisibleStart, 1)
   const monthsBeforeDefault = eachMonthOfInterval({ 
     start: fullTimelineStart, 
-    end: subMonths(defaultVisibleStart, 1) 
-  });
+    end: defaultVisibleStart
+  }).slice(0, -1); // Remove the last month to exclude defaultVisibleStart itself
   const initialScrollLeft = monthsBeforeDefault.length * MONTH_WIDTH;
 
   console.log('Dashboard Timeline Debug:', {
