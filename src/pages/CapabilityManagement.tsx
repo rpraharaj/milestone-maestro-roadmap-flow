@@ -242,7 +242,7 @@ const CapabilityManagement = () => {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-800';
-      case 'In Progress': return 'bg-blue-100 text-blue-800';
+      case 'In Progress': return 'bg-gray-100 text-gray-800';
       case 'On Hold': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -274,13 +274,13 @@ const CapabilityManagement = () => {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               id="csv-import"
             />
-            <Button variant="outline" className="bg-blue-50 hover:bg-blue-100 border-blue-200">
+            <Button variant="outline" className="bg-gray-50 hover:bg-gray-100 border-gray-200">
               <Upload className="h-4 w-4 mr-2" />
               Import CSV
             </Button>
           </div>
         </div>
-        <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-2" />
           Add Capability
         </Button>

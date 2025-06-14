@@ -223,7 +223,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit">
               {capability ? "Update" : "Add"} Capability
             </Button>
           </div>
