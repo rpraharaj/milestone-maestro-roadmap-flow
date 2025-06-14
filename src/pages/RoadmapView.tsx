@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { History, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import TimelineHeader from "@/components/roadmap/TimelineHeader";
+import TimelineRow from "@/components/roadmap/TimelineRow";
+import PhaseLegend from "@/components/roadmap/PhaseLegend";
 
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
@@ -22,8 +25,6 @@ export default function RoadmapView() {
       (typeof val === "number" && !isNaN(val)) ||
       val instanceof Date
     ) {
-      // avoid boolean (typeof true === "boolean")
-      // for string, skip empty string
       return new Date(val as string | number | Date);
     }
     return fallback;
@@ -114,9 +115,7 @@ export default function RoadmapView() {
   // --- 4. Use ref+effect: scroll to today in view on mount/first render (so default is today centered/at start) ---
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // Scroll so "today" (or the month containing today) is visible at left after mount.
     if (!scrollAreaRef.current) return;
-    // where to scroll left? (find the pixel offset of current month in content, subtract month width * 3 for 3 months before)
     const currentMonthIndex = contentMonths.findIndex(m => 
       m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth()
     );
@@ -146,7 +145,6 @@ export default function RoadmapView() {
             <div
               className="w-full"
               style={{
-                // fixed width for viewport, this ensures we always see only 12 months (3 prior, 9 future)
                 overflowX: "auto",
                 minHeight: TIMELINE_MIN_HEIGHT,
               }}
@@ -162,28 +160,11 @@ export default function RoadmapView() {
                 }}
               >
                 {/* Timeline Header */}
-                <div className="border-b bg-gray-50 p-4 sticky top-0 z-10">
-                  <div className="flex">
-                    {/* Capability column offset */}
-                    <div className="w-56 flex-shrink-0" />
-                    <div className="flex-1 relative">
-                      <div className="flex" style={{ minWidth: `${timelineContentWidth}px` }}>
-                        {contentMonths.map((month) => (
-                          <div
-                            key={month.toISOString()}
-                            className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
-                            style={{
-                              minWidth: `${MONTH_WIDTH}px`,
-                              width: `${MONTH_WIDTH}px`,
-                            }}
-                          >
-                            {format(month, "MMM yyyy")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TimelineHeader
+                  months={contentMonths}
+                  monthWidth={MONTH_WIDTH}
+                  contentWidth={timelineContentWidth}
+                />
                 {/* Timeline Content */}
                 <div className="divide-y divide-gray-200">
                   {data.capabilities.map(capability => {
@@ -196,80 +177,22 @@ export default function RoadmapView() {
                     ];
                     if (plansToShow.length === 0) return null;
                     return (
-                      <div key={capability.id} className="bg-white">
-                        {plansToShow.map(({ plan, isActive }, planIndex) => (
-                          <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
-                            {/* Capability Column */}
-                            <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
-                              <div>
-                                {/* Capability name and badges */}
-                                <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
-                                  {capability.name}
-                                  {!isActive && (
-                                    <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
-                                  )}
-                                </h3>
-                                <div className="flex items-center space-x-2 mt-1">
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
-                                      capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
-                                      'border-green-200 text-green-800 bg-green-50'
-                                    }
-                                  >
-                                    {capability.ragStatus}
-                                  </Badge>
-                                  <span className="text-xs text-gray-500">{capability.status}</span>
-                                </div>
-                                {/* Show/Hide History button on a separate row below metadata */}
-                                {planIndex === 0 && hasHistory && (
-                                  <div className="mt-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setShowHistory(prev => ({
-                                        ...prev,
-                                        [capability.id]: !prev[capability.id]
-                                      }))}
-                                      className="text-xs w-full flex justify-start"
-                                    >
-                                      <History className="h-3 w-3 mr-1" />
-                                      {showHistory[capability.id] ? 'Hide' : 'Show'} History
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            {/* Timeline Column */}
-                            <div className="flex-1 relative h-8 px-4 min-w-0">
-                              <div className="relative h-full w-full">
-                                {phases.map(phase => {
-                                  const startDate = parsePlanDate(plan[phase.startField as keyof typeof plan]);
-                                  const endDate = parsePlanDate(plan[phase.endField as keyof typeof plan]);
-                                  const position = getPhasePosition(startDate, endDate);
-                                  return (
-                                    <div
-                                      key={phase.key}
-                                      className={`absolute h-6 rounded ${phase.color} ${isActive ? '' : 'opacity-60'} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
-                                      style={{
-                                        left: position.left,
-                                        width: position.width,
-                                        top: '6px',
-                                      }}
-                                      title={`${phase.label}: ${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`}
-                                    >
-                                      <div className="text-xs text-white font-medium p-1 truncate">
-                                        {phase.label}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <TimelineRow
+                        key={capability.id}
+                        capability={capability}
+                        plansToShow={plansToShow}
+                        showHistory={!!showHistory[capability.id]}
+                        hasHistory={hasHistory}
+                        onToggleHistory={() =>
+                          setShowHistory(prev => ({
+                            ...prev,
+                            [capability.id]: !prev[capability.id]
+                          }))
+                        }
+                        getPhasePosition={getPhasePosition}
+                        parsePlanDate={parsePlanDate}
+                        phases={phases}
+                      />
                     );
                   })}
                 </div>
@@ -297,18 +220,9 @@ export default function RoadmapView() {
           <CardTitle className="text-lg">Phase Legend</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            {phases.map(phase => (
-              <div key={phase.key} className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded ${phase.color}`}></div>
-                <span className="text-sm font-medium">{phase.label}</span>
-              </div>
-            ))}
-          </div>
+          <PhaseLegend phases={phases} />
         </CardContent>
       </Card>
     </div>
   );
 }
-
-// Reminder: This file is growing large (>270 lines)! Please consider refactoring it into smaller components for maintainability.
