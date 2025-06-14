@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,17 +54,33 @@ export default function RoadmapView() {
 
   // Helper function to get milestone for a capability
   const getMilestoneForCapability = (capabilityId: string) => {
-    return data.milestones.find(milestone => 
-      milestone.capabilityIds && milestone.capabilityIds.includes(capabilityId)
-    );
+    // Debug logging to understand the data structure
+    console.log('Looking for milestone for capability:', capabilityId);
+    console.log('Available milestones:', data.milestones);
+    
+    // Try multiple ways to find the milestone
+    const milestone = data.milestones.find(milestone => {
+      // Check if capabilityIds exists and includes the capability
+      if (milestone.capabilityIds && Array.isArray(milestone.capabilityIds)) {
+        return milestone.capabilityIds.includes(capabilityId);
+      }
+      
+      // Check if there's a single capabilityId field
+      if (milestone.capabilityId === capabilityId) {
+        return true;
+      }
+      
+      // Check if capabilities field exists (alternative naming)
+      if (milestone.capabilities && Array.isArray(milestone.capabilities)) {
+        return milestone.capabilities.includes(capabilityId);
+      }
+      
+      return false;
+    });
+    
+    console.log('Found milestone for capability', capabilityId, ':', milestone);
+    return milestone;
   };
-
-  // Filter capabilities based on search and selection
-  const filteredCapabilities = data.capabilities.filter(capability => {
-    const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
-    const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
-    return matchesSearch && matchesSelection;
-  });
 
   // Export to PDF function with improved error handling
   const handleExportPDF = async () => {
@@ -339,6 +354,13 @@ export default function RoadmapView() {
       [capabilityId]: !prev[capabilityId]
     }));
   };
+
+  // Filter capabilities based on search and selection
+  const filteredCapabilities = data.capabilities.filter(capability => {
+    const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
+    const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
+    return matchesSearch && matchesSelection;
+  });
 
   // Get plans with capability data (only active plans unless history is toggled)
   const plansWithCapability: Array<{ capability: any; plan: any; isActive: boolean }> = [];
