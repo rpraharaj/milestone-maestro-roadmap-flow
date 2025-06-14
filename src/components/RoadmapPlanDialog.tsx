@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -271,7 +270,6 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
             <Button
               type="submit"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 px-4"
             >
               {existingPlan ? "Update Plan" : "Create Plan"}
             </Button>
