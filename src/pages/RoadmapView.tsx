@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,10 +12,10 @@ import PhaseLegend from "@/components/roadmap/PhaseLegend";
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
-  // --- 1. Compute default timeline window (3 months before, 9 months after now) ---
+  // --- 1. Compute default timeline window (1 month before, 11 months after now) ---
   const now = new Date();
-  const timelineDefaultStart = startOfMonth(subMonths(now, 3));
-  const timelineDefaultEnd = endOfMonth(addMonths(now, 9));
+  const timelineDefaultStart = startOfMonth(subMonths(now, 1));
+  const timelineDefaultEnd = endOfMonth(addMonths(now, 11));
 
   // Helper to safely parse dates from plan fields
   function parsePlanDate(val: unknown, fallback: Date = new Date()): Date {
