@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,38 +30,55 @@ export default function RoadmapView() {
     }));
   };
 
-  // Export to PDF function
+  // Export to PDF function with improved error handling
   const handleExportPDF = async () => {
-    // Dynamically import the required modules
-    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-      import('jspdf'),
-      import('html2canvas')
-    ]);
-
-    // Create a temporary container for the PDF export view
-    const exportContainer = document.createElement('div');
-    exportContainer.style.position = 'absolute';
-    exportContainer.style.left = '-9999px';
-    exportContainer.style.top = '0';
-    document.body.appendChild(exportContainer);
-
-    // Define timeline for PDF export: 24 months from the earliest plan date
-    const allPlanDates = getAllPlanDates();
-    let pdfTimelineStart: Date;
-    if (allPlanDates.length > 0) {
-      const earliestPlanDate = dateMin(allPlanDates);
-      pdfTimelineStart = startOfMonth(earliestPlanDate);
-    } else {
-      pdfTimelineStart = startOfMonth(new Date()); // Fallback
-    }
-    const pdfTimelineEnd = endOfMonth(addMonths(pdfTimelineStart, 23));
-
     try {
-      // Render the PDF export view
-      const { createRoot } = await import('react-dom/client');
-      const root = createRoot(exportContainer);
+      console.log('Starting PDF export...');
       
-      await new Promise<void>((resolve) => {
+      // Try to import the required modules with better error handling
+      let jsPDF, html2canvas;
+      
+      try {
+        const modules = await Promise.all([
+          import('jspdf'),
+          import('html2canvas')
+        ]);
+        jsPDF = modules[0].default;
+        html2canvas = modules[1].default;
+        console.log('Modules imported successfully');
+      } catch (importError) {
+        console.error('Failed to import PDF modules:', importError);
+        alert('Failed to load PDF export libraries. Please try again.');
+        return;
+      }
+
+      // Create a temporary container for the PDF export view
+      const exportContainer = document.createElement('div');
+      exportContainer.style.position = 'absolute';
+      exportContainer.style.left = '-9999px';
+      exportContainer.style.top = '0';
+      exportContainer.style.zIndex = '-1000';
+      document.body.appendChild(exportContainer);
+
+      // Define timeline for PDF export: 24 months from the earliest plan date
+      const allPlanDates = getAllPlanDates();
+      let pdfTimelineStart: Date;
+      if (allPlanDates.length > 0) {
+        const earliestPlanDate = dateMin(allPlanDates);
+        pdfTimelineStart = startOfMonth(earliestPlanDate);
+      } else {
+        pdfTimelineStart = startOfMonth(new Date()); // Fallback
+      }
+      const pdfTimelineEnd = endOfMonth(addMonths(pdfTimelineStart, 23));
+
+      try {
+        // Use React 18 createRoot API
+        const { createRoot } = await import('react-dom/client');
+        const root = createRoot(exportContainer);
+        
+        console.log('Rendering PDF content...');
+        
+        // Render the PDF export view
         root.render(
           <PDFExportView
             capabilities={data.capabilities}
@@ -74,57 +90,77 @@ export default function RoadmapView() {
           />
         );
         
-        // Wait for render and images to load
-        setTimeout(resolve, 500);
-      });
+        // Wait for render and any potential async operations
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const pdfContent = exportContainer.firstChild as HTMLElement;
+        
+        if (!pdfContent) {
+          throw new Error('Failed to render PDF content');
+        }
+        
+        console.log('Generating canvas from HTML...');
+        
+        // Generate PDF with improved settings
+        const canvas = await html2canvas(pdfContent, {
+          scale: 1.5, // Balanced scale for good quality and performance
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: pdfContent.scrollWidth,
+          height: pdfContent.scrollHeight,
+          logging: false,
+        });
 
-      const pdfContent = exportContainer.firstChild as HTMLElement;
-      
-      // Generate PDF with improved settings
-      const canvas = await html2canvas(pdfContent, {
-        scale: 2, // Higher scale for better resolution
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: pdfContent.scrollWidth,
-        height: pdfContent.scrollHeight,
-      });
+        console.log('Creating PDF...');
+        
+        const imgData = canvas.toDataURL('image/png', 0.95);
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'pt',
+          format: 'a3',
+        });
 
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'pt', // Use points for more intuitive scaling
-        format: 'a3',
-      });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const margin = 30;
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 40; // 20pt margin on each side
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const imgRatio = imgWidth / imgHeight;
+        
+        let finalImgWidth = pdfWidth - margin * 2;
+        let finalImgHeight = finalImgWidth / imgRatio;
+        
+        if (finalImgHeight > pdfHeight - margin * 2) {
+          finalImgHeight = pdfHeight - margin * 2;
+          finalImgWidth = finalImgHeight * imgRatio;
+        }
+        
+        const imgX = (pdfWidth - finalImgWidth) / 2;
+        const imgY = (pdfHeight - finalImgHeight) / 2;
 
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const imgRatio = imgWidth / imgHeight;
-      
-      let finalImgWidth = pdfWidth - margin * 2;
-      let finalImgHeight = finalImgWidth / imgRatio;
-      
-      if (finalImgHeight > pdfHeight - margin * 2) {
-        finalImgHeight = pdfHeight - margin * 2;
-        finalImgWidth = finalImgHeight * imgRatio;
+        pdf.addImage(imgData, 'PNG', imgX, imgY, finalImgWidth, finalImgHeight);
+        
+        console.log('Saving PDF...');
+        pdf.save('roadmap-export.pdf');
+        
+        console.log('PDF export completed successfully');
+
+        // Cleanup
+        root.unmount();
+      } catch (renderError) {
+        console.error('Error during PDF rendering:', renderError);
+        alert('Failed to generate PDF. Please try again.');
+      } finally {
+        // Always cleanup the container
+        if (document.body.contains(exportContainer)) {
+          document.body.removeChild(exportContainer);
+        }
       }
-      
-      const imgX = (pdfWidth - finalImgWidth) / 2;
-      const imgY = (pdfHeight - finalImgHeight) / 2;
-
-      pdf.addImage(imgData, 'PNG', imgX, imgY, finalImgWidth, finalImgHeight);
-      pdf.save('roadmap-export.pdf');
-
-      // Cleanup
-      root.unmount();
     } catch (error) {
       console.error('Error generating PDF:', error);
-    } finally {
-      document.body.removeChild(exportContainer);
+      alert('An error occurred while generating the PDF. Please check the console for details.');
     }
   };
 
