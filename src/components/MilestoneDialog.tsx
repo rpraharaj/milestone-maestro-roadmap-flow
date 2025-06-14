@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -134,7 +133,13 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                   {formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent 
+                className="w-auto p-0 z-[300]" 
+                align="start"
+                side="bottom"
+                sideOffset={4}
+                avoidCollisions={true}
+              >
                 <Calendar
                   mode="single"
                   selected={formData.date}
