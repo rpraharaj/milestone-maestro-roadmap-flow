@@ -37,6 +37,8 @@ const DATE_FIELDS = [
 ];
 
 const RoadmapManagement = () => {
+  console.log('🔄 RoadmapManagement: Component rendering');
+  
   const { data, getActiveRoadmapPlan, getRoadmapHistory, deleteRoadmapPlan } = useData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCapabilityId, setSelectedCapabilityId] = useState<string | null>(null);
@@ -55,6 +57,7 @@ const RoadmapManagement = () => {
   );
 
   const openCreatePlan = (cid: string) => {
+    console.log('🔄 RoadmapManagement: Opening plan dialog for capability:', cid);
     setSelectedCapabilityId(cid);
     setIsDialogOpen(true);
   };
@@ -138,7 +141,7 @@ const RoadmapManagement = () => {
       label: "Capability",
       priority: "high" as const,
       width: isMobile ? "40%" : "200px",
-      className: "font-medium sticky left-0 bg-white z-10",
+      className: "font-medium sticky left-0 bg-white",
     },
     ...DATE_FIELDS.map(field => ({
       key: field.key,

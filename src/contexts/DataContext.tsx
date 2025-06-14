@@ -3,8 +3,8 @@ import { AppData, Capability, Milestone, RoadmapPlan } from '@/types';
 
 interface DataContextType {
   data: AppData;
-  addCapability: (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateCapability: (id: string, capability: Partial<Capability>) => void;
+  addCapability: (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateCapability: (id: string, capability: Partial<Capability>) => Promise<void>;
   deleteCapability: (id: string) => void;
   addMilestone: (milestone: Omit<Milestone, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateMilestone: (id: string, milestone: Partial<Milestone>) => void;
@@ -31,9 +31,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedData = localStorage.getItem('projectManagerData');
-    if (savedData) {
-      try {
+    try {
+      const savedData = localStorage.getItem('projectManagerData');
+      if (savedData) {
+        console.log('🔄 DataContext: Loading saved data from localStorage');
         const parsedData = JSON.parse(savedData);
         // Convert date strings back to Date objects
         const processedData: AppData = {
@@ -64,18 +65,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           })),
         };
         setData(processedData);
-      } catch (error) {
-        console.error('Error loading saved data:', error);
+        console.log('✅ DataContext: Data loaded successfully');
       }
+    } catch (error) {
+      console.error('❌ DataContext: Error loading saved data:', error);
     }
   }, []);
 
   // Save data to localStorage whenever data changes
   useEffect(() => {
-    localStorage.setItem('projectManagerData', JSON.stringify(data));
+    try {
+      localStorage.setItem('projectManagerData', JSON.stringify(data));
+      console.log('💾 DataContext: Data saved to localStorage');
+    } catch (error) {
+      console.error('❌ DataContext: Error saving data:', error);
+    }
   }, [data]);
 
-  const addCapability = async (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addCapability = async (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
     console.log('🔄 DataContext: addCapability started with:', capability);
     
     return new Promise<void>((resolve, reject) => {
@@ -113,11 +120,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           return newData;
         });
 
-        // Resolve after state update
-        setTimeout(() => {
-          console.log('✅ DataContext: addCapability completed successfully');
-          resolve();
-        }, 0);
+        // Resolve immediately
+        console.log('✅ DataContext: addCapability completed successfully');
+        resolve();
 
       } catch (error) {
         console.error('❌ DataContext: Error in addCapability:', error);
@@ -126,13 +131,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const updateCapability = (id: string, updates: Partial<Capability>) => {
-    setData(prev => ({
-      ...prev,
-      capabilities: prev.capabilities.map(cap =>
-        cap.id === id ? { ...cap, ...updates, updatedAt: new Date() } : cap
-      ),
-    }));
+  const updateCapability = async (id: string, updates: Partial<Capability>): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+      try {
+        console.log('🔄 DataContext: updateCapability started for id:', id, 'updates:', updates);
+        
+        setData(prev => ({
+          ...prev,
+          capabilities: prev.capabilities.map(cap =>
+            cap.id === id ? { ...cap, ...updates, updatedAt: new Date() } : cap
+          ),
+        }));
+        
+        console.log('✅ DataContext: updateCapability completed successfully');
+        resolve();
+      } catch (error) {
+        console.error('❌ DataContext: Error in updateCapability:', error);
+        reject(error);
+      }
+    });
   };
 
   const deleteCapability = (id: string) => {

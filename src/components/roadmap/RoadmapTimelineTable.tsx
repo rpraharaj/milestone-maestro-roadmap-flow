@@ -86,9 +86,9 @@ export const RoadmapTimelineTable: React.FC<Props> = ({
           <thead>
             <tr>
               <th className={classNames(
-                "sticky left-0 z-10 bg-white border-b text-left",
+                "sticky left-0 bg-white border-b text-left",
                 isMobile ? "px-3 py-3 w-48" : "px-2 py-1 w-40"
-              )}>
+              )} style={{ zIndex: 10 }}>
                 Capability
               </th>
               {days.map((day, idx) => {

@@ -27,7 +27,40 @@ interface CapabilityDialogProps {
   onClose: () => void;
 }
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    console.error('CapabilityDialog Error Boundary caught:', error);
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('CapabilityDialog Error Boundary details:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-4 text-red-600">
+          Something went wrong with the capability dialog. Please try again.
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps) => {
+  console.log('🔄 CapabilityDialog: Rendering with capability:', capability, 'isOpen:', isOpen);
+  
   const { addCapability, updateCapability, data } = useData();
   const [formData, setFormData] = useState({
     name: "",
@@ -44,27 +77,36 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
   useEffect(() => {
     console.log('🔄 CapabilityDialog: Dialog state changed - isOpen:', isOpen, 'capability:', capability);
     
-    if (capability) {
-      setFormData({
-        name: capability.name,
-        workstreamLead: capability.workstreamLead,
-        sme: capability.sme,
-        ba: capability.ba,
-        milestone: capability.milestone && capability.milestone.length ? capability.milestone : "none",
-        status: capability.status,
-        ragStatus: capability.ragStatus,
-        notes: capability.notes,
-      });
-    } else {
-      setFormData({
-        name: "",
-        workstreamLead: "",
-        sme: "",
-        ba: "",
-        milestone: "none",
-        status: "Not Started",
-        ragStatus: "Green",
-        notes: "",
+    try {
+      if (capability) {
+        setFormData({
+          name: capability.name || "",
+          workstreamLead: capability.workstreamLead || "",
+          sme: capability.sme || "",
+          ba: capability.ba || "",
+          milestone: capability.milestone && capability.milestone.length ? capability.milestone : "none",
+          status: capability.status || "Not Started",
+          ragStatus: capability.ragStatus || "Green",
+          notes: capability.notes || "",
+        });
+      } else {
+        setFormData({
+          name: "",
+          workstreamLead: "",
+          sme: "",
+          ba: "",
+          milestone: "none",
+          status: "Not Started",
+          ragStatus: "Green",
+          notes: "",
+        });
+      }
+    } catch (error) {
+      console.error('❌ CapabilityDialog: Error in useEffect:', error);
+      toast({
+        title: "Error",
+        description: "Failed to initialize dialog",
+        variant: "destructive",
       });
     }
   }, [capability, isOpen]);
@@ -84,7 +126,10 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log('⚠️ CapabilityDialog: Form already submitting, ignoring');
+      return;
+    }
     
     console.log('🔄 CapabilityDialog: Form submission started');
     
@@ -139,150 +184,156 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    } catch (error) {
+      console.error('❌ CapabilityDialog: Error in handleChange:', error);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {capability ? "Edit Capability" : "Add New Capability"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="name">Capability Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                placeholder="Enter capability name"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="workstreamLead">Workstream Lead</Label>
-              <Input
-                id="workstreamLead"
-                value={formData.workstreamLead}
-                onChange={(e) => handleChange("workstreamLead", e.target.value)}
-                placeholder="Enter workstream lead"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="sme">SME</Label>
-              <Input
-                id="sme"
-                value={formData.sme}
-                onChange={(e) => handleChange("sme", e.target.value)}
-                placeholder="Enter SME"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="ba">BA</Label>
-              <Input
-                id="ba"
-                value={formData.ba}
-                onChange={(e) => handleChange("ba", e.target.value)}
-                placeholder="Enter BA"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="milestone">Milestone</Label>
-              <Select 
-                value={formData.milestone} 
-                onValueChange={(value) => handleChange("milestone", value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select milestone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No milestone</SelectItem>
-                  {data.milestones.map((milestone) => (
-                    <SelectItem key={milestone.id} value={milestone.name}>
-                      {milestone.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value: any) => handleChange("status", value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Not Started">Not Started</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="On Hold">On Hold</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="ragStatus">RAG Status</Label>
-              <Select 
-                value={formData.ragStatus} 
-                onValueChange={(value: any) => handleChange("ragStatus", value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Red">Red</SelectItem>
-                  <SelectItem value="Amber">Amber</SelectItem>
-                  <SelectItem value="Green">Green</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="md:col-span-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Enter notes..."
-                rows={4}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
+    <ErrorBoundary>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {capability ? "Edit Capability" : "Add New Capability"}
+            </DialogTitle>
+          </DialogHeader>
           
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : capability ? "Update" : "Add"} Capability
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="name">Capability Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  placeholder="Enter capability name"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="workstreamLead">Workstream Lead</Label>
+                <Input
+                  id="workstreamLead"
+                  value={formData.workstreamLead}
+                  onChange={(e) => handleChange("workstreamLead", e.target.value)}
+                  placeholder="Enter workstream lead"
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sme">SME</Label>
+                <Input
+                  id="sme"
+                  value={formData.sme}
+                  onChange={(e) => handleChange("sme", e.target.value)}
+                  placeholder="Enter SME"
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="ba">BA</Label>
+                <Input
+                  id="ba"
+                  value={formData.ba}
+                  onChange={(e) => handleChange("ba", e.target.value)}
+                  placeholder="Enter BA"
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="milestone">Milestone</Label>
+                <Select 
+                  value={formData.milestone} 
+                  onValueChange={(value) => handleChange("milestone", value)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select milestone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No milestone</SelectItem>
+                    {data.milestones.map((milestone) => (
+                      <SelectItem key={milestone.id} value={milestone.name}>
+                        {milestone.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value: any) => handleChange("status", value)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Not Started">Not Started</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="On Hold">On Hold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="ragStatus">RAG Status</Label>
+                <Select 
+                  value={formData.ragStatus} 
+                  onValueChange={(value: any) => handleChange("ragStatus", value)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Red">Red</SelectItem>
+                    <SelectItem value="Amber">Amber</SelectItem>
+                    <SelectItem value="Green">Green</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="md:col-span-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => handleChange("notes", e.target.value)}
+                  placeholder="Enter notes..."
+                  rows={4}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Processing..." : capability ? "Update" : "Add"} Capability
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </ErrorBoundary>
   );
 };
 

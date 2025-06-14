@@ -151,7 +151,8 @@ export const MobileTable: React.FC<MobileTableProps> = ({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent 
                             align="end" 
-                            className="w-48 bg-white border shadow-lg z-50"
+                            className="w-48 bg-white border shadow-lg"
+                            style={{ zIndex: 50 }}
                           >
                             {hiddenColumns.length > 0 && (
                               <DropdownMenuItem
