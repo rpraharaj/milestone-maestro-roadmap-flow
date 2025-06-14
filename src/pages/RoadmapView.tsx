@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Calendar, History, MapPin } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays } from "date-fns";
 
 const RoadmapView = () => {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
@@ -17,13 +17,11 @@ const RoadmapView = () => {
   // Get all roadmap plans (active and historical)
   const allPlans = useMemo(() => {
     const plans: Array<{ capability: any; plan: any; isActive: boolean }> = [];
-    
     data.capabilities.forEach(capability => {
       const activePlan = getActiveRoadmapPlan(capability.id);
       if (activePlan) {
         plans.push({ capability, plan: activePlan, isActive: true });
       }
-      
       if (showHistory[capability.id]) {
         const history = getRoadmapHistory(capability.id);
         history.slice(1).forEach(plan => {
@@ -31,7 +29,6 @@ const RoadmapView = () => {
         });
       }
     });
-    
     return plans;
   }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
 
@@ -44,10 +41,8 @@ const RoadmapView = () => {
         end: endOfMonth(new Date(now.getFullYear(), now.getMonth() + 12))
       };
     }
-
     let minDate = new Date();
     let maxDate = new Date();
-
     allPlans.forEach(({ plan }) => {
       const dates = [
         plan.requirementStartDate,
@@ -61,13 +56,11 @@ const RoadmapView = () => {
         plan.uatStartDate,
         plan.uatEndDate,
       ];
-
       dates.forEach(date => {
         if (date < minDate) minDate = date;
         if (date > maxDate) maxDate = date;
       });
     });
-
     return {
       start: startOfMonth(minDate),
       end: endOfMonth(maxDate)
@@ -84,13 +77,12 @@ const RoadmapView = () => {
     }));
   };
 
+  // Instead of stacking (offsetting) by phase, show all bars in a single horizontal line
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     const startOffset = differenceInDays(startDate, timelineBounds.start);
     const duration = differenceInDays(endDate, startDate);
-    
     const leftPercent = (startOffset / totalDays) * 100;
     const widthPercent = (duration / totalDays) * 100;
-    
     return {
       left: `${Math.max(0, leftPercent)}%`,
       width: `${Math.max(1, widthPercent)}%`
@@ -211,14 +203,13 @@ const RoadmapView = () => {
                             )}
                           </div>
                         </div>
-                        
-                        <div className="flex-1 relative h-12 px-4">
-                          <div className="relative h-full">
+                        {/* PHASES: All phases in a single row */}
+                        <div className="flex-1 relative h-8 px-4">
+                          <div className="relative h-full w-full">
                             {phases.map(phase => {
                               const startDate = plan[phase.startField as keyof typeof plan] as Date;
                               const endDate = plan[phase.endField as keyof typeof plan] as Date;
                               const position = getPhasePosition(startDate, endDate);
-                              
                               return (
                                 <div
                                   key={phase.key}
@@ -226,7 +217,7 @@ const RoadmapView = () => {
                                   style={{
                                     left: position.left,
                                     width: position.width,
-                                    top: `${phases.indexOf(phase) * 7}px`,
+                                    top: '6px',
                                   }}
                                   title={`${phase.label}: ${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`}
                                 >
@@ -264,3 +255,4 @@ const RoadmapView = () => {
 };
 
 export default RoadmapView;
+
