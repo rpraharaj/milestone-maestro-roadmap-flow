@@ -106,9 +106,11 @@ export default function RoadmapView() {
           </CardHeader>
           {/* -- Wrap the timeline table in a horizontal ScrollArea -- */}
           <CardContent className="p-0">
-            <ScrollArea className="w-full overflow-x-auto">
-              {/* Timeline Header */}
-              <div className="w-max">
+            {/* ADDED: force visible horizontal scroll! */}
+            <ScrollArea className="w-full h-auto overflow-x-auto" style={{ minHeight: 140 }}>
+              {/* Timeline Header + Content is inside this horizontally scrollable area */}
+              <div className="w-max min-w-full">
+                {/* Timeline Header */}
                 <div className="border-b bg-gray-50 p-4">
                   <div className="flex">
                     {/* Make capability column width smaller */}
