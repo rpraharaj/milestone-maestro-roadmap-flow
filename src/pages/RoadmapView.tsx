@@ -132,24 +132,33 @@ export default function RoadmapView() {
   const calculateFullTimelineBounds = () => {
     const allPlanDates = getAllPlanDates();
     
-    // Always include the default view range
-    let timelineStart = startOfMonth(subMonths(now, 1));
-    let timelineEnd = endOfMonth(addMonths(now, 11));
+    // Default visible timeline (1 month before current + current + 11 months after = 13 months total)
+    let defaultVisibleStart = startOfMonth(subMonths(now, 1));
+    let defaultVisibleEnd = endOfMonth(addMonths(now, 11));
+    
+    // Full timeline starts with default range
+    let fullTimelineStart = defaultVisibleStart;
+    let fullTimelineEnd = defaultVisibleEnd;
     
     if (allPlanDates.length > 0) {
       const earliestPlanDate = dateMin(allPlanDates);
       const latestPlanDate = dateMax(allPlanDates);
       
-      // Extend timeline to include all plan dates with some padding
-      const earliestMonth = startOfMonth(subMonths(earliestPlanDate, 1));
-      const latestMonth = endOfMonth(addMonths(latestPlanDate, 1));
-      
-      // Only extend beyond default range if plans exist outside it
-      timelineStart = dateMin([timelineStart, earliestMonth]);
-      timelineEnd = dateMax([timelineEnd, latestMonth]);
+      // Extend timeline to include all plan dates with some padding, but only if outside default range
+      if (earliestPlanDate < defaultVisibleStart) {
+        fullTimelineStart = startOfMonth(subMonths(earliestPlanDate, 1));
+      }
+      if (latestPlanDate > defaultVisibleEnd) {
+        fullTimelineEnd = endOfMonth(addMonths(latestPlanDate, 1));
+      }
     }
     
-    return { timelineStart, timelineEnd };
+    return { 
+      timelineStart: fullTimelineStart, 
+      timelineEnd: fullTimelineEnd,
+      defaultVisibleStart,
+      defaultVisibleEnd
+    };
   };
 
   // Export to PDF function with improved error handling
@@ -333,21 +342,36 @@ export default function RoadmapView() {
 
   const { monthWidth: currentMonthWidth, rowHeight: currentRowHeight } = getCurrentDimensions();
 
-  // Default visible timeline (current month + 1 before + 11 after)
-  const defaultVisibleStart = startOfMonth(subMonths(now, 1));
-  const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
-  
-  // Full scrollable timeline (includes all historical data)
-  const { timelineStart: fullTimelineStart, timelineEnd: fullTimelineEnd } = calculateFullTimelineBounds();
+  // Calculate timeline bounds and default view
+  const { 
+    timelineStart: fullTimelineStart, 
+    timelineEnd: fullTimelineEnd,
+    defaultVisibleStart,
+    defaultVisibleEnd
+  } = calculateFullTimelineBounds();
   
   // Use full timeline for the scrollable area
   const headerMonths = eachMonthOfInterval({ start: fullTimelineStart, end: fullTimelineEnd });
   const timelineContentWidth = headerMonths.length * currentMonthWidth;
 
-  // Calculate initial scroll position to show default view
-  const defaultViewMonths = eachMonthOfInterval({ start: defaultVisibleStart, end: defaultVisibleEnd });
-  const monthsBeforeDefault = eachMonthOfInterval({ start: fullTimelineStart, end: subMonths(defaultVisibleStart, 1) });
-  const initialScrollLeft = monthsBeforeDefault.length * MONTH_WIDTH;
+  // Calculate initial scroll position to show default view (1 month before current + 11 after)
+  const monthsBeforeDefault = eachMonthOfInterval({ 
+    start: fullTimelineStart, 
+    end: subMonths(defaultVisibleStart, 1) 
+  });
+  const initialScrollLeft = monthsBeforeDefault.length * currentMonthWidth;
+
+  console.log('Roadmap Timeline Debug:', {
+    now: format(now, 'MMM yyyy'),
+    defaultVisibleStart: format(defaultVisibleStart, 'MMM yyyy'),
+    defaultVisibleEnd: format(defaultVisibleEnd, 'MMM yyyy'),
+    fullTimelineStart: format(fullTimelineStart, 'MMM yyyy'),
+    fullTimelineEnd: format(fullTimelineEnd, 'MMM yyyy'),
+    monthsBeforeDefault: monthsBeforeDefault.length,
+    initialScrollLeft,
+    currentMonthWidth,
+    totalMonths: headerMonths.length
+  });
 
   const toggleHistory = (capabilityId: string) => {
     setShowHistory(prev => ({
@@ -642,6 +666,7 @@ export default function RoadmapView() {
                     // Set initial scroll position to show default view
                     setTimeout(() => {
                       ref.scrollLeft = initialScrollLeft;
+                      console.log('Roadmap scroll positioned to:', initialScrollLeft);
                     }, 100);
                   }
                 }}

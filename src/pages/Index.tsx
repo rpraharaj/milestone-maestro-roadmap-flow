@@ -142,29 +142,29 @@ const Index = () => {
 
   const timelineBounds = getTimelineBounds();
   
-  // Calculate default visible timeline (current month + 1 before + 11 after)
+  // Calculate default visible timeline (1 month before current + current + 11 months after = 13 months total)
   const now = new Date();
   const defaultVisibleStart = startOfMonth(subMonths(now, 1));
   const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
   
-  // Extend timeline if plans exist outside default range
-  let timelineStart = defaultVisibleStart;
-  let timelineEnd = defaultVisibleEnd;
+  // Calculate full scrollable timeline (extend if plans exist outside default range)
+  let fullTimelineStart = defaultVisibleStart;
+  let fullTimelineEnd = defaultVisibleEnd;
   
   if (timelineBounds) {
     if (timelineBounds.minDate < defaultVisibleStart) {
-      timelineStart = startOfMonth(subMonths(timelineBounds.minDate, 1));
+      fullTimelineStart = startOfMonth(subMonths(timelineBounds.minDate, 1));
     }
     if (timelineBounds.maxDate > defaultVisibleEnd) {
-      timelineEnd = endOfMonth(addMonths(timelineBounds.maxDate, 1));
+      fullTimelineEnd = endOfMonth(addMonths(timelineBounds.maxDate, 1));
     }
   }
   
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     if (!timelineBounds) return { left: '0%', width: '0%' };
     
-    const totalDays = differenceInDays(timelineEnd, timelineStart);
-    const startOffset = differenceInDays(startDate, timelineStart);
+    const totalDays = differenceInDays(fullTimelineEnd, fullTimelineStart);
+    const startOffset = differenceInDays(startDate, fullTimelineStart);
     const duration = differenceInDays(endDate, startDate) + 1;
     
     const left = (startOffset / totalDays) * 100;
@@ -176,17 +176,38 @@ const Index = () => {
     };
   };
 
-  const months = eachMonthOfInterval({
-    start: timelineStart,
-    end: timelineEnd
+  // Generate all months for the scrollable timeline
+  const allMonths = eachMonthOfInterval({
+    start: fullTimelineStart,
+    end: fullTimelineEnd
   });
 
-  const timelineContentWidth = months.length * MONTH_WIDTH;
+  // Generate default view months for calculating scroll position
+  const defaultViewMonths = eachMonthOfInterval({
+    start: defaultVisibleStart,
+    end: defaultVisibleEnd
+  });
 
-  // Calculate initial scroll position to show default view
-  const defaultViewMonths = eachMonthOfInterval({ start: defaultVisibleStart, end: defaultVisibleEnd });
-  const monthsBeforeDefault = eachMonthOfInterval({ start: timelineStart, end: subMonths(defaultVisibleStart, 1) });
+  const timelineContentWidth = allMonths.length * MONTH_WIDTH;
+
+  // Calculate initial scroll position to show default view (1 month before current + 11 after)
+  const monthsBeforeDefault = eachMonthOfInterval({ 
+    start: fullTimelineStart, 
+    end: subMonths(defaultVisibleStart, 1) 
+  });
   const initialScrollLeft = monthsBeforeDefault.length * MONTH_WIDTH;
+
+  console.log('Dashboard Timeline Debug:', {
+    now: format(now, 'MMM yyyy'),
+    defaultVisibleStart: format(defaultVisibleStart, 'MMM yyyy'),
+    defaultVisibleEnd: format(defaultVisibleEnd, 'MMM yyyy'),
+    fullTimelineStart: format(fullTimelineStart, 'MMM yyyy'),
+    fullTimelineEnd: format(fullTimelineEnd, 'MMM yyyy'),
+    monthsBeforeDefault: monthsBeforeDefault.length,
+    initialScrollLeft,
+    MONTH_WIDTH,
+    totalMonths: allMonths.length
+  });
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -253,7 +274,7 @@ const Index = () => {
                   ))}
                 </div>
 
-                {/* Scrollable timeline area - updated to match roadmap view */}
+                {/* Scrollable timeline area */}
                 <div className="flex-1 min-w-0 bg-white">
                   <div 
                     className="overflow-x-auto"
@@ -265,6 +286,7 @@ const Index = () => {
                         // Set initial scroll position to show default view
                         setTimeout(() => {
                           ref.scrollLeft = initialScrollLeft;
+                          console.log('Dashboard scroll positioned to:', initialScrollLeft);
                         }, 100);
                       }
                     }}
@@ -275,7 +297,7 @@ const Index = () => {
                         className="flex border-b border-gray-200 bg-gray-50"
                         style={{ height: ROW_HEIGHT }}
                       >
-                        {months.map((month) => (
+                        {allMonths.map((month) => (
                           <div
                             key={month.toISOString()}
                             className="text-center text-xs font-medium text-gray-600 border-l border-gray-200 first:border-l-0 flex items-center justify-center"
