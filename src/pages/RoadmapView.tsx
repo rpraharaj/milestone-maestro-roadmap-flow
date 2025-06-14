@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,17 @@ export default function RoadmapView() {
   const [selectedCapability, setSelectedCapability] = useState<string>("all");
   const isMobile = useIsMobile();
   const now = new Date();
+
+  const handleColumnToggle = (column: 'rag' | 'status' | 'history' | 'milestone') => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
+
+  const toggleFullView = () => {
+    setIsFullView(prev => !prev);
+  };
 
   // Helper function to get milestone for a capability
   const getMilestoneForCapability = (capabilityId: string) => {
