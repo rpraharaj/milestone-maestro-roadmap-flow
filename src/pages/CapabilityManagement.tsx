@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, Target } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Target, Download, Upload } from "lucide-react";
 import CapabilityDialog from "@/components/CapabilityDialog";
 import { Capability } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableHeader,
@@ -17,7 +18,8 @@ import {
 } from "@/components/ui/table";
 
 const CapabilityManagement = () => {
-  const { data, deleteCapability } = useData();
+  const { data, deleteCapability, addCapability } = useData();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCapability, setSelectedCapability] = useState<Capability | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,6 +50,103 @@ const CapabilityManagement = () => {
     setIsDialogOpen(true);
   };
 
+  const exportToCSV = () => {
+    const headers = ['Name', 'Workstream Lead', 'SME', 'BA', 'Milestone', 'Status', 'RAG Status', 'Notes'];
+    const csvContent = [
+      headers.join(','),
+      ...data.capabilities.map(cap => [
+        `"${cap.name.replace(/"/g, '""')}"`,
+        `"${cap.workstreamLead.replace(/"/g, '""')}"`,
+        `"${cap.sme.replace(/"/g, '""')}"`,
+        `"${cap.ba.replace(/"/g, '""')}"`,
+        `"${cap.milestone?.replace(/"/g, '""') || ''}"`,
+        `"${cap.status}"`,
+        `"${cap.ragStatus}"`,
+        `"${cap.notes?.replace(/"/g, '""') || ''}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `capabilities_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export successful",
+      description: "Capabilities data has been exported to CSV.",
+    });
+  };
+
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+        
+        // Validate headers
+        const expectedHeaders = ['Name', 'Workstream Lead', 'SME', 'BA', 'Milestone', 'Status', 'RAG Status', 'Notes'];
+        if (!expectedHeaders.every(header => headers.includes(header))) {
+          throw new Error('Invalid CSV format. Please ensure headers match the export format.');
+        }
+
+        let importCount = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const values = line.split(',').map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+          
+          if (values.length >= 8) {
+            const capability = {
+              name: values[0],
+              workstreamLead: values[1],
+              sme: values[2],
+              ba: values[3],
+              milestone: values[4],
+              status: values[5] as Capability['status'],
+              ragStatus: values[6] as Capability['ragStatus'],
+              notes: values[7],
+            };
+
+            // Validate required fields and enum values
+            if (capability.name && capability.workstreamLead && capability.sme && capability.ba) {
+              if (['Not Started', 'In Progress', 'Completed', 'On Hold'].includes(capability.status) &&
+                  ['Red', 'Amber', 'Green'].includes(capability.ragStatus)) {
+                addCapability(capability);
+                importCount++;
+              }
+            }
+          }
+        }
+
+        toast({
+          title: "Import successful",
+          description: `${importCount} capabilities have been imported.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Import failed",
+          description: error instanceof Error ? error.message : "Failed to import CSV file.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Clear the input value to allow re-importing the same file
+    event.target.value = '';
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'bg-green-100 text-green-800';
@@ -68,8 +167,27 @@ const CapabilityManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Removed headline/description - now handled by Layout */}
-      <div className="flex justify-end items-center">
+      {/* Action Buttons */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <Button onClick={exportToCSV} variant="outline" className="bg-green-50 hover:bg-green-100 border-green-200">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <div className="relative">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleImportCSV}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              id="csv-import"
+            />
+            <Button variant="outline" className="bg-blue-50 hover:bg-blue-100 border-blue-200">
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+          </div>
+        </div>
         <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           Add Capability
