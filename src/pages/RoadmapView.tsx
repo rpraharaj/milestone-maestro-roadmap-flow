@@ -43,6 +43,7 @@ export default function RoadmapView() {
     exportContainer.style.position = 'absolute';
     exportContainer.style.left = '-9999px';
     exportContainer.style.top = '0';
+    exportContainer.style.width = '1400px';
     document.body.appendChild(exportContainer);
 
     // Create the PDF export view
@@ -69,13 +70,13 @@ export default function RoadmapView() {
         setTimeout(resolve, 1000);
       });
 
-      // Generate PDF
+      // Generate PDF with better settings for landscape
       const canvas = await html2canvas(exportContainer.firstChild as HTMLElement, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: 1200,
+        width: 1400,
         height: exportContainer.scrollHeight,
       });
 
@@ -83,18 +84,26 @@ export default function RoadmapView() {
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a4',
+        format: 'a3', // Changed to A3 for more space
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / (imgWidth * 0.264583), pdfHeight / (imgHeight * 0.264583));
-      const imgX = (pdfWidth - imgWidth * 0.264583 * ratio) / 2;
-      const imgY = 10;
+      
+      // Calculate scaling to fit content
+      const ratio = Math.min(
+        (pdfWidth - 20) / (imgWidth * 0.264583), 
+        (pdfHeight - 20) / (imgHeight * 0.264583)
+      );
+      
+      const scaledWidth = imgWidth * 0.264583 * ratio;
+      const scaledHeight = imgHeight * 0.264583 * ratio;
+      const imgX = (pdfWidth - scaledWidth) / 2;
+      const imgY = (pdfHeight - scaledHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * 0.264583 * ratio, imgHeight * 0.264583 * ratio);
+      pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
       pdf.save('roadmap-export.pdf');
 
       // Cleanup
