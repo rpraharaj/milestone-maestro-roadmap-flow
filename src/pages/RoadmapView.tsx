@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
 import PDFExport from "@/components/roadmap/PDFExport";
 import PDFExportView from "@/components/roadmap/PDFExportView";
+import { CollapsibleFilter } from "@/components/ui/collapsible-filter";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
@@ -29,17 +31,21 @@ const MOBILE_FULL_VIEW_ROW_HEIGHT = 24;
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
+  
+  const isMobile = useIsMobile();
+  
+  // Mobile-specific default visibility - only capability column visible
   const [visibleColumns, setVisibleColumns] = useState({
-    rag: true,
-    status: true,
-    milestone: true,
-    history: true,
+    rag: !isMobile,
+    status: !isMobile,
+    milestone: !isMobile,
+    history: !isMobile,
   });
+  
   const [isFullView, setIsFullView] = useState(false);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("");
   const [selectedCapability, setSelectedCapability] = useState<string>("all");
   const [selectedMilestone, setSelectedMilestone] = useState<string>("all");
-  const isMobile = useIsMobile();
   const now = new Date();
 
   // Filter capabilities based on search, selection, and milestone
@@ -60,6 +66,13 @@ export default function RoadmapView() {
   const toggleFullView = () => {
     setIsFullView(prev => !prev);
   };
+
+  // Count active filters
+  const activeFiltersCount = [
+    capabilityFilter,
+    selectedCapability !== "all" ? selectedCapability : "",
+    selectedMilestone !== "all" ? selectedMilestone : ""
+  ].filter(Boolean).length;
 
   // Helper function to get milestone for a capability
   const getMilestoneForCapability = (capabilityId: string) => {
@@ -306,7 +319,9 @@ export default function RoadmapView() {
       scaleFactor = 0.7; // Compact for desktop full view
     }
     
-    const baseColumns = [{ label: 'Capability', width: Math.round(192 * scaleFactor) }];
+    // Reduce capability column width more aggressively on mobile
+    const capabilityWidth = isMobile ? Math.round(120 * scaleFactor) : Math.round(192 * scaleFactor);
+    const baseColumns = [{ label: 'Capability', width: capabilityWidth }];
     const conditionalColumns = [];
     
     if (visibleColumns.rag) {
@@ -474,61 +489,60 @@ export default function RoadmapView() {
   return (
     <div className="space-y-6 flex flex-col">
       {/* Filters Section */}
-      <Card className="order-0">
-        <CardHeader className={isMobile ? 'p-3' : ''}>
-          <CardTitle className={textSizes.title}>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className={isMobile ? 'p-3' : ''}>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Capability Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search capabilities..."
-                  value={capabilityFilter}
-                  onChange={(e) => setCapabilityFilter(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            {/* Capability Dropdown */}
-            <div className="w-full sm:w-48">
-              <Select value={selectedCapability} onValueChange={setSelectedCapability}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select capability" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Capabilities</SelectItem>
-                  {data.capabilities.map((capability) => (
-                    <SelectItem key={capability.id} value={capability.id}>
-                      {capability.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Milestone Dropdown */}
-            <div className="w-full sm:w-48">
-              <Select value={selectedMilestone} onValueChange={setSelectedMilestone}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select milestone" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Milestones</SelectItem>
-                  {data.milestones.map((milestone) => (
-                    <SelectItem key={milestone.id} value={milestone.name}>
-                      {milestone.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <CollapsibleFilter 
+        title="Search & Filters" 
+        activeFiltersCount={activeFiltersCount}
+        defaultCollapsed={true}
+      >
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Capability Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search capabilities..."
+                value={capabilityFilter}
+                onChange={(e) => setCapabilityFilter(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          {/* Capability Dropdown */}
+          <div className="w-full sm:w-48">
+            <Select value={selectedCapability} onValueChange={setSelectedCapability}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select capability" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Capabilities</SelectItem>
+                {data.capabilities.map((capability) => (
+                  <SelectItem key={capability.id} value={capability.id}>
+                    {capability.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Milestone Dropdown */}
+          <div className="w-full sm:w-48">
+            <Select value={selectedMilestone} onValueChange={setSelectedMilestone}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select milestone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Milestones</SelectItem>
+                {data.milestones.map((milestone) => (
+                  <SelectItem key={milestone.id} value={milestone.name}>
+                    {milestone.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CollapsibleFilter>
 
       {plansWithCapability.length > 0 ? (
         <Card className={`overflow-hidden order-1 ${isFullView ? 'fixed inset-4 z-50 bg-white' : ''}`}>

@@ -20,6 +20,7 @@ import RoadmapPlanDialog from "@/components/RoadmapPlanDialog";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { MobileTable } from "@/components/ui/mobile-table";
+import { CollapsibleFilter } from "@/components/ui/collapsible-filter";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DATE_FIELDS = [
@@ -70,6 +71,9 @@ const RoadmapManagement = () => {
       description: `Roadmap plan v${planVersion} for ${capabilityName} has been deleted.`,
     });
   };
+
+  // Count active filters
+  const activeFiltersCount = searchTerm ? 1 : 0;
 
   // Prepare table data
   const tableData = filteredCapabilities.flatMap((cap) => {
@@ -213,30 +217,32 @@ const RoadmapManagement = () => {
 
   return (
     <div className="space-y-4 p-4">
-      {/* Search filter */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search capabilities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isMobile ? "pl-10 h-12 text-base" : "pl-10 h-9"}
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setSearchTerm("")}
-              size="sm"
-              className={isMobile ? "h-12 px-4" : "h-9"}
-            >
-              Clear
-            </Button>
+      {/* Search filter with collapsible container */}
+      <CollapsibleFilter 
+        title="Search & Filters" 
+        activeFiltersCount={activeFiltersCount}
+        defaultCollapsed={true}
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search capabilities..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={isMobile ? "pl-10 h-12 text-base" : "pl-10 h-9"}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            variant="outline"
+            onClick={() => setSearchTerm("")}
+            size="sm"
+            className={isMobile ? "h-12 px-4" : "h-9"}
+          >
+            Clear
+          </Button>
+        </div>
+      </CollapsibleFilter>
 
       {/* Main table */}
       <Card className="shadow-sm">
