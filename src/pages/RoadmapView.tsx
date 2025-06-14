@@ -15,6 +15,20 @@ export default function RoadmapView() {
   const timelineDefaultStart = startOfMonth(subMonths(now, 3));
   const timelineDefaultEnd = endOfMonth(addMonths(now, 9));
 
+  // Helper to safely parse dates from plan fields
+  function parsePlanDate(val: unknown, fallback: Date = new Date()): Date {
+    if (
+      (typeof val === "string" && val) ||
+      (typeof val === "number" && !isNaN(val)) ||
+      val instanceof Date
+    ) {
+      // avoid boolean (typeof true === "boolean")
+      // for string, skip empty string
+      return new Date(val as string | number | Date);
+    }
+    return fallback;
+  }
+
   // Get all roadmap plans (active and historical)
   const allPlans = useMemo(() => {
     const plans: Array<{ capability: any; plan: any; isActive: boolean }> = [];
@@ -147,7 +161,7 @@ export default function RoadmapView() {
                   maxWidth: "none",
                 }}
               >
-                {/* Timeline Header (relative to the plan date range, contentMonths) */}
+                {/* Timeline Header */}
                 <div className="border-b bg-gray-50 p-4 sticky top-0 z-10">
                   <div className="flex">
                     {/* Capability column offset */}
@@ -185,7 +199,7 @@ export default function RoadmapView() {
                       <div key={capability.id} className="bg-white">
                         {plansToShow.map(({ plan, isActive }, planIndex) => (
                           <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
-                            {/* Capability Column: reduced width */}
+                            {/* Capability Column */}
                             <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
                               <div>
                                 {/* Capability name and badges */}
@@ -227,12 +241,12 @@ export default function RoadmapView() {
                                 )}
                               </div>
                             </div>
-                            {/* Timeline Column: increased width by flex-grow */}
+                            {/* Timeline Column */}
                             <div className="flex-1 relative h-8 px-4 min-w-0">
                               <div className="relative h-full w-full">
                                 {phases.map(phase => {
-                                  const startDate = new Date(plan[phase.startField as keyof typeof plan]);
-                                  const endDate = new Date(plan[phase.endField as keyof typeof plan]);
+                                  const startDate = parsePlanDate(plan[phase.startField as keyof typeof plan]);
+                                  const endDate = parsePlanDate(plan[phase.endField as keyof typeof plan]);
                                   const position = getPhasePosition(startDate, endDate);
                                   return (
                                     <div
