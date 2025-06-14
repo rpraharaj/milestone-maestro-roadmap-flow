@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import RoadmapPlanDialog from "@/components/RoadmapPlanDialog";
-import SimpleCapabilityDialog from "@/components/SimpleCapabilityDialog";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { MobileTable } from "@/components/ui/mobile-table";
@@ -43,7 +42,6 @@ const RoadmapManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCapabilityId, setSelectedCapabilityId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCapabilityDialogOpen, setIsCapabilityDialogOpen] = useState(false);
   const [showHistory, setShowHistory] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; planId: string; version: number; capabilityName: string }>({
     open: false,
@@ -61,11 +59,6 @@ const RoadmapManagement = () => {
     console.log('🔄 RoadmapManagement: Opening plan dialog for capability:', cid);
     setSelectedCapabilityId(cid);
     setIsDialogOpen(true);
-  };
-
-  const handleAddCapability = () => {
-    console.log('🔄 RoadmapManagement: Opening add capability dialog');
-    setIsCapabilityDialogOpen(true);
   };
 
   const toggleHistory = (cid: string) => {
@@ -226,16 +219,10 @@ const RoadmapManagement = () => {
 
   return (
     <div className="space-y-4 p-4">
-      {/* Header with Add Capability button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Roadmap Management</h1>
-          <p className="text-gray-600">Manage roadmap plans for your capabilities</p>
-        </div>
-        <Button onClick={handleAddCapability} className="w-full sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Capability
-        </Button>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Roadmap Management</h1>
+        <p className="text-gray-600">Manage roadmap plans for your capabilities</p>
       </div>
 
       {/* Search filter with collapsible container */}
@@ -285,13 +272,6 @@ const RoadmapManagement = () => {
         capabilityId={selectedCapabilityId}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-      />
-
-      {/* Dialog for capability management */}
-      <SimpleCapabilityDialog
-        capability={null}
-        isOpen={isCapabilityDialogOpen}
-        onClose={() => setIsCapabilityDialogOpen(false)}
       />
 
       {/* Delete confirmation dialog */}

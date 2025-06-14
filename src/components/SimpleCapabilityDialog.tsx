@@ -35,7 +35,7 @@ const SimpleCapabilityDialog = ({ capability, isOpen, onClose }: SimpleCapabilit
     workstreamLead: "",
     sme: "",
     ba: "",
-    milestone: "",
+    milestone: "none",
     status: "Not Started" as Capability['status'],
     ragStatus: "Green" as Capability['ragStatus'],
     notes: "",
@@ -49,7 +49,7 @@ const SimpleCapabilityDialog = ({ capability, isOpen, onClose }: SimpleCapabilit
         workstreamLead: capability.workstreamLead || "",
         sme: capability.sme || "",
         ba: capability.ba || "",
-        milestone: capability.milestone || "",
+        milestone: capability.milestone || "none",
         status: capability.status || "Not Started",
         ragStatus: capability.ragStatus || "Green",
         notes: capability.notes || "",
@@ -60,7 +60,7 @@ const SimpleCapabilityDialog = ({ capability, isOpen, onClose }: SimpleCapabilit
         workstreamLead: "",
         sme: "",
         ba: "",
-        milestone: "",
+        milestone: "none",
         status: "Not Started",
         ragStatus: "Green",
         notes: "",
@@ -90,7 +90,7 @@ const SimpleCapabilityDialog = ({ capability, isOpen, onClose }: SimpleCapabilit
         workstreamLead: formData.workstreamLead.trim(),
         sme: formData.sme.trim(),
         ba: formData.ba.trim(),
-        milestone: formData.milestone,
+        milestone: formData.milestone === "none" ? "" : formData.milestone,
         status: formData.status,
         ragStatus: formData.ragStatus,
         notes: formData.notes.trim(),
@@ -190,7 +190,7 @@ const SimpleCapabilityDialog = ({ capability, isOpen, onClose }: SimpleCapabilit
                   <SelectValue placeholder="Select milestone" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No milestone</SelectItem>
+                  <SelectItem value="none">No milestone</SelectItem>
                   {data.milestones.map((milestone) => (
                     <SelectItem key={milestone.id} value={milestone.name}>
                       {milestone.name}
