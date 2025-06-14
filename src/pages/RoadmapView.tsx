@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,9 +26,75 @@ export default function RoadmapView() {
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const now = new Date();
 
-  // Timeline: 1 month before, 11 after current date
-  const timelineStart = startOfMonth(subMonths(now, 1));
-  const timelineEnd = endOfMonth(addMonths(now, 11));
+  // Get all plans to determine the actual date range needed
+  const getAllPlanDates = () => {
+    const dates: Date[] = [];
+    data.capabilities.forEach((cap) => {
+      const activePlan = getActiveRoadmapPlan(cap.id);
+      if (activePlan) {
+        // Add all plan dates
+        const planDates = [
+          activePlan.requirementStartDate,
+          activePlan.requirementEndDate,
+          activePlan.designStartDate,
+          activePlan.designEndDate,
+          activePlan.devStartDate,
+          activePlan.devEndDate,
+          activePlan.cstStartDate,
+          activePlan.cstEndDate,
+          activePlan.uatStartDate,
+          activePlan.uatEndDate,
+        ].filter(date => date instanceof Date);
+        dates.push(...planDates);
+      }
+      
+      // Also include historical plan dates if history is shown
+      if (showHistory[cap.id]) {
+        const history = getRoadmapHistory(cap.id);
+        history.slice(1).forEach((historicalPlan) => {
+          const historicalDates = [
+            historicalPlan.requirementStartDate,
+            historicalPlan.requirementEndDate,
+            historicalPlan.designStartDate,
+            historicalPlan.designEndDate,
+            historicalPlan.devStartDate,
+            historicalPlan.devEndDate,
+            historicalPlan.cstStartDate,
+            historicalPlan.cstEndDate,
+            historicalPlan.uatStartDate,
+            historicalPlan.uatEndDate,
+          ].filter(date => date instanceof Date);
+          dates.push(...historicalDates);
+        });
+      }
+    });
+    return dates;
+  };
+
+  // Calculate timeline bounds based on actual plan dates
+  const calculateTimelineBounds = () => {
+    const allPlanDates = getAllPlanDates();
+    
+    // Default timeline: 1 month before, 11 after current date
+    let timelineStart = startOfMonth(subMonths(now, 1));
+    let timelineEnd = endOfMonth(addMonths(now, 11));
+    
+    if (allPlanDates.length > 0) {
+      const earliestPlanDate = dateMin(allPlanDates);
+      const latestPlanDate = dateMax(allPlanDates);
+      
+      // Extend timeline to include all plan dates with some padding
+      const earliestMonth = startOfMonth(subMonths(earliestPlanDate, 1));
+      const latestMonth = endOfMonth(addMonths(latestPlanDate, 1));
+      
+      timelineStart = dateMin([timelineStart, earliestMonth]);
+      timelineEnd = dateMax([timelineEnd, latestMonth]);
+    }
+    
+    return { timelineStart, timelineEnd };
+  };
+
+  const { timelineStart, timelineEnd } = calculateTimelineBounds();
   const headerMonths = eachMonthOfInterval({ start: timelineStart, end: timelineEnd });
   const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
 
