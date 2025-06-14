@@ -67,40 +67,40 @@ const Index = () => {
     }
   };
 
-  // Timeline phases configuration
+  // Timeline phases configuration - updated to match roadmap view colors
   const phases = [
     {
       key: 'requirement',
       label: 'Req',
-      color: 'bg-gray-500',
+      color: 'bg-blue-500',
       startField: 'requirementStartDate',
       endField: 'requirementEndDate',
     },
     {
       key: 'design',
       label: 'Design',
-      color: 'bg-gray-600',
+      color: 'bg-purple-500',
       startField: 'designStartDate',
       endField: 'designEndDate',
     },
     {
       key: 'dev',
       label: 'Dev',
-      color: 'bg-gray-700',
+      color: 'bg-green-500',
       startField: 'devStartDate',
       endField: 'devEndDate',
     },
     {
       key: 'cst',
       label: 'CST',
-      color: 'bg-gray-800',
+      color: 'bg-orange-500',
       startField: 'cstStartDate',
       endField: 'cstEndDate',
     },
     {
       key: 'uat',
       label: 'UAT',
-      color: 'bg-black',
+      color: 'bg-red-500',
       startField: 'uatStartDate',
       endField: 'uatEndDate',
     },
