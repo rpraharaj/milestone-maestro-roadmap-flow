@@ -95,7 +95,7 @@ const Layout = () => {
             </span>
           </div>
         </div>
-        <main className="p-6">
+        <main className="px-6 pt-2 pb-6"> {/* Changed p-6 to px-6 pt-2 pb-6 */}
           <Outlet />
         </main>
       </div>
@@ -104,3 +104,4 @@ const Layout = () => {
 };
 
 export default Layout;
+
