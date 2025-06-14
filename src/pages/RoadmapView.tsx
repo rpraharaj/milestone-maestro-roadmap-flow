@@ -47,49 +47,15 @@ export default function RoadmapView() {
     return plans;
   }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
 
-  // --- 2. Compute *true* bounds with all plans' dates ---
-  const planDateExtremes = useMemo(() => {
-    if (allPlans.length === 0) return { minDate: timelineDefaultStart, maxDate: timelineDefaultEnd };
-    let minDate = timelineDefaultStart;
-    let maxDate = timelineDefaultEnd;
-    allPlans.forEach(({ plan }) => {
-      // Only include values which are strings, numbers, or Date (skip boolean, undefined, etc)
-      function isValidDateInput(d: unknown): d is string | number | Date {
-        return (
-          (typeof d === "string" || typeof d === "number" || d instanceof Date)
-          && typeof d !== "boolean"
-        );
-      }
-      const dates = [
-        plan.requirementStartDate,
-        plan.requirementEndDate,
-        plan.designStartDate,
-        plan.designEndDate,
-        plan.devStartDate,
-        plan.devEndDate,
-        plan.cstStartDate,
-        plan.cstEndDate,
-        plan.uatStartDate,
-        plan.uatEndDate,
-      ]
-        .filter(isValidDateInput)
-        .map(d => new Date(d));
-      minDate = dateMin([minDate, ...dates]);
-      maxDate = dateMax([maxDate, ...dates]);
-    });
-    return { minDate: startOfMonth(minDate), maxDate: endOfMonth(maxDate) };
-  }, [allPlans, timelineDefaultStart, timelineDefaultEnd]);
-
-  // --- 3. Use default visible window for viewport, but allow content width to spread over actual plan range ---
+  // --- Timeline always uses default window, ignore project data min/max
   const visibleTimelineStart = timelineDefaultStart;
   const visibleTimelineEnd = timelineDefaultEnd;
-  const actualContentStart = planDateExtremes.minDate;
-  const actualContentEnd = planDateExtremes.maxDate;
+  const actualContentStart = timelineDefaultStart;
+  const actualContentEnd = timelineDefaultEnd;
 
-  // Months for header (for visible window)
+  // Months for header and content are always the same (window)
   const headerMonths = eachMonthOfInterval({ start: visibleTimelineStart, end: visibleTimelineEnd });
-  // Months for content (could be larger than header)
-  const contentMonths = eachMonthOfInterval({ start: actualContentStart, end: actualContentEnd });
+  const contentMonths = headerMonths;
 
   // We calculate width: each month will be fixed px (e.g. 120px), so content W = Nmonths * px/unit
   const MONTH_WIDTH = 120;
@@ -97,11 +63,18 @@ export default function RoadmapView() {
   const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
   const timelineViewportWidth = headerMonths.length * MONTH_WIDTH;
 
-  // For aligning bars: offset every plan/phase bars based on their date relative to actualContentStart
+  // For aligning bars: offset every plan/phase bars based on their date relative to actualContentStart,
+  // but CLAMP all bars to actualContentStart and actualContentEnd
   const getPhasePosition = (startDate: Date, endDate: Date) => {
-    // clamp values within min/max
-    const startOffset = differenceInDays(startDate, actualContentStart);
-    const duration = differenceInDays(endDate, startDate);
+    // Clamp phase start and end to visible window
+    const clampedStart = max([startDate, actualContentStart]);
+    const clampedEnd = min([endDate, actualContentEnd]);
+    if (clampedEnd < clampedStart) {
+      // phase does not appear in window
+      return { left: "0%", width: "0%" };
+    }
+    const startOffset = differenceInDays(clampedStart, actualContentStart);
+    const duration = differenceInDays(clampedEnd, clampedStart);
     const totalDays = differenceInDays(actualContentEnd, actualContentStart);
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
