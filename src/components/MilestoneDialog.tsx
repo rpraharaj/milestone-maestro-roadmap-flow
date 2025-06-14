@@ -134,11 +134,17 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-auto p-0 z-[300]" 
-                align="start"
-                side="bottom"
-                sideOffset={4}
+                className={cn(
+                  "w-auto p-0",
+                  isMobile 
+                    ? "z-[9999] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[calc(100vw-2rem)]" 
+                    : "z-[300]"
+                )}
+                align={isMobile ? "center" : "start"}
+                side={isMobile ? "top" : "bottom"}
+                sideOffset={isMobile ? 0 : 4}
                 avoidCollisions={true}
+                collisionPadding={isMobile ? { left: 16, right: 16, top: 16, bottom: 16 } : undefined}
               >
                 <Calendar
                   mode="single"
@@ -151,7 +157,7 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                   captionLayout="dropdown"
                   fromYear={new Date().getFullYear() - 5}
                   toYear={new Date().getFullYear() + 10}
-                  className={cn("p-3 pointer-events-auto")}
+                  className={cn("p-3 pointer-events-auto", isMobile && "w-full max-w-sm")}
                 />
               </PopoverContent>
             </Popover>
