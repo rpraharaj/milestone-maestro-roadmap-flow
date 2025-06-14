@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -219,6 +220,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
+                          defaultMonth={formData[phase.startField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
@@ -247,6 +249,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
+                          defaultMonth={formData[phase.endField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
