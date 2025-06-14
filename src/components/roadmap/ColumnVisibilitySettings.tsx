@@ -14,8 +14,9 @@ interface ColumnVisibilitySettingsProps {
     rag: boolean;
     status: boolean;
     history: boolean;
+    milestone: boolean;
   };
-  onColumnToggle: (column: 'rag' | 'status' | 'history') => void;
+  onColumnToggle: (column: 'rag' | 'status' | 'history' | 'milestone') => void;
 }
 
 export default function ColumnVisibilitySettings({
@@ -25,6 +26,7 @@ export default function ColumnVisibilitySettings({
   const columns = [
     { key: 'rag' as const, label: 'RAG' },
     { key: 'status' as const, label: 'Status' },
+    { key: 'milestone' as const, label: 'Milestone' },
     { key: 'history' as const, label: 'History' },
   ];
 

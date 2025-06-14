@@ -32,6 +32,7 @@ export default function RoadmapView() {
   const [visibleColumns, setVisibleColumns] = useState({
     rag: true,
     status: true,
+    milestone: true,
     history: true,
   });
   const [isFullView, setIsFullView] = useState(false);
@@ -47,7 +48,7 @@ export default function RoadmapView() {
     return matchesSearch && matchesSelection;
   });
 
-  const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
+  const handleColumnToggle = (column: 'rag' | 'status' | 'milestone' | 'history') => {
     setVisibleColumns(prev => ({
       ...prev,
       [column]: !prev[column]
@@ -302,6 +303,9 @@ export default function RoadmapView() {
     }
     if (visibleColumns.status) {
       conditionalColumns.push({ label: 'Status', width: Math.round(112 * scaleFactor) });
+    }
+    if (visibleColumns.milestone) {
+      conditionalColumns.push({ label: 'Milestone', width: Math.round(120 * scaleFactor) });
     }
     if (visibleColumns.history) {
       conditionalColumns.push({ label: 'History', width: Math.round(64 * scaleFactor) });
@@ -574,6 +578,15 @@ export default function RoadmapView() {
                         {visibleColumns.status && (
                           <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
                             {capability.status}
+                          </div>
+                        )}
+                        
+                        {/* Milestone */}
+                        {visibleColumns.milestone && (
+                          <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Milestone')?.width || 120 }}>
+                            <span className="truncate" title={milestone?.name || 'No milestone assigned'}>
+                              {milestone?.name || '-'}
+                            </span>
                           </div>
                         )}
                         
