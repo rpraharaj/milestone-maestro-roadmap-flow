@@ -175,12 +175,6 @@ const RoadmapManagement = () => {
 
   return (
     <div className="space-y-4 p-4">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-gray-900">Roadmap Management</h1>
-        <p className="text-sm text-gray-600">Manage capability roadmap plans and view historical versions</p>
-      </div>
-
       {/* Search filter */}
       <Card className="shadow-sm">
         <CardContent className="p-4">
