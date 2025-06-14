@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +33,6 @@ export default function RoadmapView() {
     rag: true,
     status: true,
     history: true,
-    milestone: true,
   });
   const [isFullView, setIsFullView] = useState(false);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("");
@@ -49,7 +47,7 @@ export default function RoadmapView() {
     return matchesSearch && matchesSelection;
   });
 
-  const handleColumnToggle = (column: 'rag' | 'status' | 'history' | 'milestone') => {
+  const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
     setVisibleColumns(prev => ({
       ...prev,
       [column]: !prev[column]
@@ -304,9 +302,6 @@ export default function RoadmapView() {
     }
     if (visibleColumns.status) {
       conditionalColumns.push({ label: 'Status', width: Math.round(112 * scaleFactor) });
-    }
-    if (visibleColumns.milestone) {
-      conditionalColumns.push({ label: 'Milestone', width: Math.round(120 * scaleFactor) });
     }
     if (visibleColumns.history) {
       conditionalColumns.push({ label: 'History', width: Math.round(64 * scaleFactor) });
@@ -579,15 +574,6 @@ export default function RoadmapView() {
                         {visibleColumns.status && (
                           <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
                             {capability.status}
-                          </div>
-                        )}
-                        
-                        {/* Technical Milestone */}
-                        {visibleColumns.milestone && (
-                          <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Milestone')?.width || 120 }}>
-                            <span className="truncate" title={milestone?.name || 'No milestone assigned'}>
-                              {milestone?.name || '-'}
-                            </span>
                           </div>
                         )}
                         
