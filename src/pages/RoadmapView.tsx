@@ -98,13 +98,6 @@ export default function RoadmapView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Roadmap View</h1>
-          <p className="text-gray-600 mt-2">Visual timeline of capability roadmaps</p>
-        </div>
-      </div>
-
       {/* Legend */}
       <Card>
         <CardHeader>
