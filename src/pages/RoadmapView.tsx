@@ -5,14 +5,9 @@ import { Button } from "@/components/ui/button";
 import { MapPin, History } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
-import TimelineFixedColumns from "@/components/roadmap/TimelineFixedColumns";
-import VisualTimeline from "@/components/roadmap/VisualTimeline";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
 import PDFExport from "@/components/roadmap/PDFExport";
 import PDFExportView from "@/components/roadmap/PDFExportView";
-import { useRoadmapPlanData } from "@/hooks/useRoadmapPlanData";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
@@ -37,6 +32,12 @@ export default function RoadmapView() {
 
   // Export to PDF function
   const handleExportPDF = async () => {
+    // Dynamically import the required modules
+    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas')
+    ]);
+
     // Create a temporary container for the PDF export view
     const exportContainer = document.createElement('div');
     exportContainer.style.position = 'absolute';
