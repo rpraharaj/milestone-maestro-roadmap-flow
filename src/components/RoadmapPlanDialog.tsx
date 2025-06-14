@@ -109,7 +109,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
   };
 
   const toggleCalendar = (field: string) => {
-    setOpenCalendars(prev => ({ ...prev, [field]: !prev[field] }));
+    setOpenCalendars(prev => ({ 
+      ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}),
+      [field]: !prev[field] 
+    }));
   };
 
   const phases = [
@@ -155,15 +158,12 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           {format(formData[phase.startField as keyof typeof formData], "MMM dd, yyyy")}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
-                          month={formData[phase.startField as keyof typeof formData] as Date}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
                           initialFocus
-                          numberOfMonths={1}
-                          captionLayout="buttons"
                         />
                       </PopoverContent>
                     </Popover>
@@ -183,15 +183,12 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           {format(formData[phase.endField as keyof typeof formData], "MMM dd, yyyy")}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                      <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
-                          month={formData[phase.endField as keyof typeof formData] as Date}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
                           initialFocus
-                          numberOfMonths={1}
-                          captionLayout="buttons"
                         />
                       </PopoverContent>
                     </Popover>
