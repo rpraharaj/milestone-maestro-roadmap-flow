@@ -684,7 +684,7 @@ export default function RoadmapView() {
                           return (
                             <div
                               key={phase.key}
-                              className={`absolute ${phaseHeight} rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                              className={`absolute ${phaseHeight} rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center justify-center`}
                               style={{
                                 left: position.left,
                                 width: position.width,
@@ -693,7 +693,7 @@ export default function RoadmapView() {
                               }}
                               title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                             >
-                              <div className={`${textSizes.phase} text-white font-medium px-1 truncate`}>
+                              <div className={`${textSizes.phase} text-white font-medium px-1 truncate text-center`}>
                                 {phase.label}
                               </div>
                             </div>
