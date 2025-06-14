@@ -8,6 +8,7 @@ import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
 import PDFExport from "@/components/roadmap/PDFExport";
 import PDFExportView from "@/components/roadmap/PDFExportView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
@@ -16,6 +17,12 @@ const ROW_HEIGHT = 48;
 // Full view constants - smaller sizes to fit more content
 const FULL_VIEW_MONTH_WIDTH = 60;
 const FULL_VIEW_ROW_HEIGHT = 32;
+
+// Mobile view constants - even more compact
+const MOBILE_MONTH_WIDTH = 40;
+const MOBILE_ROW_HEIGHT = 32;
+const MOBILE_FULL_VIEW_MONTH_WIDTH = 30;
+const MOBILE_FULL_VIEW_ROW_HEIGHT = 24;
 
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
@@ -26,6 +33,7 @@ export default function RoadmapView() {
     history: true,
   });
   const [isFullView, setIsFullView] = useState(false);
+  const isMobile = useIsMobile();
   const now = new Date();
 
   const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
@@ -173,9 +181,17 @@ export default function RoadmapView() {
     }
   };
 
-  // Calculate dynamic column widths based on visibility and view mode
+  // Calculate dynamic column widths based on visibility, view mode, and mobile
   const getColumns = () => {
-    const scaleFactor = isFullView ? 0.7 : 1; // Reduce size in full view
+    let scaleFactor = 1;
+    if (isMobile && isFullView) {
+      scaleFactor = 0.5; // Extra compact for mobile full view
+    } else if (isMobile) {
+      scaleFactor = 0.7; // Compact for mobile
+    } else if (isFullView) {
+      scaleFactor = 0.7; // Compact for desktop full view
+    }
+    
     const baseColumns = [{ label: 'Capability', width: Math.round(192 * scaleFactor) }];
     const conditionalColumns = [];
     
@@ -195,9 +211,19 @@ export default function RoadmapView() {
   const columns = getColumns();
   const dynamicLeftWidth = columns.reduce((sum, col) => sum + col.width, 0);
 
-  // Use different dimensions based on view mode
-  const currentMonthWidth = isFullView ? FULL_VIEW_MONTH_WIDTH : MONTH_WIDTH;
-  const currentRowHeight = isFullView ? FULL_VIEW_ROW_HEIGHT : ROW_HEIGHT;
+  // Use different dimensions based on view mode and mobile
+  const getCurrentDimensions = () => {
+    if (isMobile && isFullView) {
+      return { monthWidth: MOBILE_FULL_VIEW_MONTH_WIDTH, rowHeight: MOBILE_FULL_VIEW_ROW_HEIGHT };
+    } else if (isMobile) {
+      return { monthWidth: MOBILE_MONTH_WIDTH, rowHeight: MOBILE_ROW_HEIGHT };
+    } else if (isFullView) {
+      return { monthWidth: FULL_VIEW_MONTH_WIDTH, rowHeight: FULL_VIEW_ROW_HEIGHT };
+    }
+    return { monthWidth: MONTH_WIDTH, rowHeight: ROW_HEIGHT };
+  };
+
+  const { monthWidth: currentMonthWidth, rowHeight: currentRowHeight } = getCurrentDimensions();
 
   // Get all plans to determine the full scrollable date range
   const getAllPlanDates = () => {
@@ -344,22 +370,60 @@ export default function RoadmapView() {
     { key: 'uat', label: 'UAT', color: 'bg-red-500', startField: 'uatStartDate', endField: 'uatEndDate' },
   ];
 
+  // Get responsive text sizes
+  const getTextSizes = () => {
+    if (isMobile && isFullView) {
+      return {
+        title: 'text-sm',
+        header: 'text-xs',
+        content: 'text-[10px]',
+        phase: 'text-[8px]',
+        version: 'text-[8px]'
+      };
+    } else if (isMobile) {
+      return {
+        title: 'text-base',
+        header: 'text-sm',
+        content: 'text-xs',
+        phase: 'text-[10px]',
+        version: 'text-[10px]'
+      };
+    } else if (isFullView) {
+      return {
+        title: 'text-base',
+        header: 'text-xs',
+        content: 'text-xs',
+        phase: 'text-[9px]',
+        version: 'text-xs'
+      };
+    }
+    return {
+      title: 'text-lg',
+      header: 'text-sm',
+      content: 'text-sm',
+      phase: 'text-xs',
+      version: 'text-xs'
+    };
+  };
+
+  const textSizes = getTextSizes();
+
   return (
     <div className="space-y-6 flex flex-col">
       {plansWithCapability.length > 0 ? (
         <Card className={`overflow-hidden order-1 ${isFullView ? 'fixed inset-4 z-50 bg-white' : ''}`}>
-          <CardHeader>
+          <CardHeader className={isMobile ? 'p-3' : ''}>
             <div className="flex items-center justify-between">
-              <CardTitle className={`${isFullView ? 'text-base' : 'text-lg'}`}>Project Timeline</CardTitle>
+              <CardTitle className={textSizes.title}>Project Timeline</CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "sm" : "sm"}
                   onClick={toggleFullView}
                   className="flex items-center gap-2"
                 >
                   {isFullView ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                  {isFullView ? 'Exit Full View' : 'Full View'}
+                  {isMobile ? (isFullView ? 'Exit' : 'Full') : (isFullView ? 'Exit Full View' : 'Full View')}
                 </Button>
                 {!isFullView && <PDFExport onExportPDF={handleExportPDF} />}
                 <ColumnVisibilitySettings
@@ -381,7 +445,7 @@ export default function RoadmapView() {
                   {columns.map((col) => (
                     <div
                       key={col.label}
-                      className={`flex items-center justify-center ${isFullView ? 'text-xs' : 'text-sm'} font-medium text-gray-600 border-r border-gray-200 last:border-r-0`}
+                      className={`flex items-center justify-center ${textSizes.header} font-medium text-gray-600 border-r border-gray-200 last:border-r-0`}
                       style={{ width: col.width, height: currentRowHeight }}
                     >
                       {col.label}
@@ -403,12 +467,12 @@ export default function RoadmapView() {
                     return (
                       <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: currentRowHeight }}>
                         {/* Capability Name with Version */}
-                        <div className="flex items-center px-2 border-r border-gray-200" style={{ width: columns.find(c => c.label === 'Capability')?.width || 192 }}>
-                          <span className={`font-medium truncate ${isFullView ? 'text-xs' : 'text-sm'}`} title={capability.name}>
+                        <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Capability')?.width || 192 }}>
+                          <span className={`font-medium truncate ${textSizes.content}`} title={capability.name}>
                             {capability.name}
                           </span>
                           {plan && (
-                            <span className={`ml-1 ${isFullView ? 'text-[10px]' : 'text-xs'} text-gray-500 font-normal`}>
+                            <span className={`ml-1 ${textSizes.version} text-gray-500 font-normal`}>
                               v{plan.version}
                             </span>
                           )}
@@ -418,7 +482,7 @@ export default function RoadmapView() {
                         {visibleColumns.rag && (
                           <div className="flex items-center justify-center border-r border-gray-200" style={{ width: columns.find(c => c.label === 'RAG')?.width || 48 }}>
                             <span
-                              className={`inline-block ${isFullView ? 'h-2 w-2' : 'h-3 w-3'} rounded-full ${
+                              className={`inline-block ${isMobile && isFullView ? 'h-1.5 w-1.5' : isMobile ? 'h-2 w-2' : isFullView ? 'h-2 w-2' : 'h-3 w-3'} rounded-full ${
                                 capability.ragStatus === "Red"
                                   ? "bg-red-500"
                                   : capability.ragStatus === "Amber"
@@ -432,7 +496,7 @@ export default function RoadmapView() {
                         
                         {/* Status */}
                         {visibleColumns.status && (
-                          <div className={`flex items-center px-2 ${isFullView ? 'text-[10px]' : 'text-xs'} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
+                          <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
                             {capability.status}
                           </div>
                         )}
@@ -445,10 +509,10 @@ export default function RoadmapView() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => toggleHistory(capability.id)}
-                                className="h-6 w-6 p-0"
+                                className={`${isMobile ? 'h-4 w-4 p-0' : 'h-6 w-6 p-0'}`}
                                 title={showHistory[capability.id] ? "Hide History" : "Show History"}
                               >
-                                <History className="h-3 w-3" />
+                                <History className={`${isMobile ? 'h-2 w-2' : 'h-3 w-3'}`} />
                               </Button>
                             )}
                           </div>
@@ -480,14 +544,14 @@ export default function RoadmapView() {
                     {headerMonths.map((month) => (
                       <div
                         key={month.toISOString()}
-                        className={`flex items-center justify-center ${isFullView ? 'text-[10px]' : 'text-sm'} font-medium text-gray-600 border-l border-gray-200 first:border-l-0`}
+                        className={`flex items-center justify-center ${textSizes.header} font-medium text-gray-600 border-l border-gray-200 first:border-l-0`}
                         style={{ 
                           width: isFullView ? `${100 / headerMonths.length}%` : currentMonthWidth, 
                           height: currentRowHeight,
                           minWidth: isFullView ? 'auto' : currentMonthWidth
                         }}
                       >
-                        {format(month, isFullView ? "MMM yy" : "MMM yyyy")}
+                        {format(month, isMobile && isFullView ? "MMM" : isMobile ? "MMM yy" : isFullView ? "MMM yy" : "MMM yyyy")}
                       </div>
                     ))}
                   </div>
@@ -507,10 +571,12 @@ export default function RoadmapView() {
                           
                           if (position.width === "0%") return null;
                           
+                          const phaseHeight = isMobile && isFullView ? 'h-3' : isMobile ? 'h-4' : isFullView ? 'h-4' : 'h-6';
+                          
                           return (
                             <div
                               key={phase.key}
-                              className={`absolute ${isFullView ? 'h-4' : 'h-6'} rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                              className={`absolute ${phaseHeight} rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
                               style={{
                                 left: position.left,
                                 width: position.width,
@@ -519,7 +585,7 @@ export default function RoadmapView() {
                               }}
                               title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                             >
-                              <div className={`${isFullView ? 'text-[9px]' : 'text-xs'} text-white font-medium px-1 truncate`}>
+                              <div className={`${textSizes.phase} text-white font-medium px-1 truncate`}>
                                 {phase.label}
                               </div>
                             </div>
@@ -550,10 +616,10 @@ export default function RoadmapView() {
       {/* Legend - hidden in full view */}
       {!isFullView && (
         <Card className="order-2">
-          <CardHeader>
-            <CardTitle className="text-lg">Phase Legend</CardTitle>
+          <CardHeader className={isMobile ? 'p-3' : ''}>
+            <CardTitle className={textSizes.title}>Phase Legend</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? 'p-3' : ''}>
             <PhaseLegend phases={phases} />
           </CardContent>
         </Card>
