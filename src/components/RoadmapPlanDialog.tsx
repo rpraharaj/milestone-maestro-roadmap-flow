@@ -159,6 +159,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                         <Calendar
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
+                          month={formData[phase.startField as keyof typeof formData] as Date}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
                           initialFocus
                           numberOfMonths={2}
@@ -187,6 +188,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                         <Calendar
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
+                          month={formData[phase.endField as keyof typeof formData] as Date}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
                           initialFocus
                           numberOfMonths={2}

@@ -125,6 +125,7 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                 <Calendar
                   mode="single"
                   selected={formData.date}
+                  month={formData.date}
                   onSelect={handleDateSelect}
                   initialFocus
                   numberOfMonths={2}
