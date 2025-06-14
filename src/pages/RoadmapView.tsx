@@ -58,23 +58,12 @@ export default function RoadmapView() {
     console.log('Looking for milestone for capability:', capabilityId);
     console.log('Available milestones:', data.milestones);
     
-    // Try multiple ways to find the milestone
+    // Find milestone that includes this capability in its capabilityIds array
     const milestone = data.milestones.find(milestone => {
       // Check if capabilityIds exists and includes the capability
       if (milestone.capabilityIds && Array.isArray(milestone.capabilityIds)) {
         return milestone.capabilityIds.includes(capabilityId);
       }
-      
-      // Check if there's a single capabilityId field
-      if (milestone.capabilityId === capabilityId) {
-        return true;
-      }
-      
-      // Check if capabilities field exists (alternative naming)
-      if (milestone.capabilities && Array.isArray(milestone.capabilities)) {
-        return milestone.capabilities.includes(capabilityId);
-      }
-      
       return false;
     });
     
