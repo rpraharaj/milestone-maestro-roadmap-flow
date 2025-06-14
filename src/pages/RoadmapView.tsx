@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,12 +44,19 @@ export default function RoadmapView() {
     exportContainer.style.position = 'absolute';
     exportContainer.style.left = '-9999px';
     exportContainer.style.top = '0';
-    exportContainer.style.width = '1400px';
     document.body.appendChild(exportContainer);
 
-    // Create the PDF export view
-    const { timelineStart, timelineEnd } = calculateFullTimelineBounds();
-    
+    // Define timeline for PDF export: 24 months from the earliest plan date
+    const allPlanDates = getAllPlanDates();
+    let pdfTimelineStart: Date;
+    if (allPlanDates.length > 0) {
+      const earliestPlanDate = dateMin(allPlanDates);
+      pdfTimelineStart = startOfMonth(earliestPlanDate);
+    } else {
+      pdfTimelineStart = startOfMonth(new Date()); // Fallback
+    }
+    const pdfTimelineEnd = endOfMonth(addMonths(pdfTimelineStart, 23));
+
     try {
       // Render the PDF export view
       const { createRoot } = await import('react-dom/client');
@@ -61,49 +69,54 @@ export default function RoadmapView() {
             getActiveRoadmapPlan={getActiveRoadmapPlan}
             parsePlanDate={parsePlanDate}
             phases={phases}
-            timelineStart={timelineStart}
-            timelineEnd={timelineEnd}
+            timelineStart={pdfTimelineStart}
+            timelineEnd={pdfTimelineEnd}
           />
         );
         
-        // Wait for render
-        setTimeout(resolve, 1000);
+        // Wait for render and images to load
+        setTimeout(resolve, 500);
       });
 
-      // Generate PDF with better settings for landscape
-      const canvas = await html2canvas(exportContainer.firstChild as HTMLElement, {
-        scale: 1.5,
+      const pdfContent = exportContainer.firstChild as HTMLElement;
+      
+      // Generate PDF with improved settings
+      const canvas = await html2canvas(pdfContent, {
+        scale: 2, // Higher scale for better resolution
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: 1400,
-        height: exportContainer.scrollHeight,
+        width: pdfContent.scrollWidth,
+        height: pdfContent.scrollHeight,
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF({
         orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3', // Changed to A3 for more space
+        unit: 'pt', // Use points for more intuitive scaling
+        format: 'a3',
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 40; // 20pt margin on each side
+
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
+      const imgRatio = imgWidth / imgHeight;
       
-      // Calculate scaling to fit content
-      const ratio = Math.min(
-        (pdfWidth - 20) / (imgWidth * 0.264583), 
-        (pdfHeight - 20) / (imgHeight * 0.264583)
-      );
+      let finalImgWidth = pdfWidth - margin * 2;
+      let finalImgHeight = finalImgWidth / imgRatio;
       
-      const scaledWidth = imgWidth * 0.264583 * ratio;
-      const scaledHeight = imgHeight * 0.264583 * ratio;
-      const imgX = (pdfWidth - scaledWidth) / 2;
-      const imgY = (pdfHeight - scaledHeight) / 2;
+      if (finalImgHeight > pdfHeight - margin * 2) {
+        finalImgHeight = pdfHeight - margin * 2;
+        finalImgWidth = finalImgHeight * imgRatio;
+      }
+      
+      const imgX = (pdfWidth - finalImgWidth) / 2;
+      const imgY = (pdfHeight - finalImgHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, scaledWidth, scaledHeight);
+      pdf.addImage(imgData, 'PNG', imgX, imgY, finalImgWidth, finalImgHeight);
       pdf.save('roadmap-export.pdf');
 
       // Cleanup

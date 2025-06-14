@@ -31,8 +31,10 @@ interface PDFExportViewProps {
   timelineEnd: Date;
 }
 
-const MONTH_WIDTH = 80;
-const ROW_HEIGHT = 40;
+const MONTH_WIDTH = 100;
+const ROW_HEIGHT = 48;
+const LEFT_PANEL_WIDTH = 250;
+const RAG_COL_WIDTH = 50;
 
 export default function PDFExportView({
   capabilities,
@@ -44,6 +46,7 @@ export default function PDFExportView({
 }: PDFExportViewProps) {
   const headerMonths = eachMonthOfInterval({ start: timelineStart, end: timelineEnd });
   const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
+  const totalWidth = LEFT_PANEL_WIDTH + RAG_COL_WIDTH + timelineContentWidth;
 
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     const clampedStart = dateMax([startDate, timelineStart]);
@@ -63,34 +66,26 @@ export default function PDFExportView({
   };
 
   return (
-    <div className="bg-white p-4" style={{ minWidth: '1600px', fontSize: '12px', lineHeight: '1.2' }}>
-      {/* Header - Minimal spacing */}
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Project Roadmap</h1>
-        <p className="text-xs text-gray-600">Generated on {format(new Date(), "MMMM dd, yyyy")}</p>
-      </div>
-      
-      <div className="border border-gray-300 rounded overflow-hidden shadow-sm">
+    <div className="bg-white p-6 font-sans" style={{ width: totalWidth, fontSize: '12px' }}>
+      <div className="border border-gray-200 shadow-sm">
         {/* Header Row */}
-        <div className="flex bg-gray-100 border-b border-gray-300" style={{ height: ROW_HEIGHT }}>
-          <div className="w-64 px-3 py-2 font-semibold text-gray-800 border-r border-gray-300 text-xs flex items-center justify-center">
+        <div className="flex bg-gray-50" style={{ height: ROW_HEIGHT }}>
+          <div className="px-4 py-2 font-semibold text-gray-800 border-r border-gray-200 flex items-center" style={{ width: LEFT_PANEL_WIDTH }}>
             Capability
           </div>
-          <div className="w-12 px-1 py-2 font-semibold text-gray-800 text-center border-r border-gray-300 text-xs flex items-center justify-center">
+          <div className="px-2 py-2 font-semibold text-gray-800 text-center border-r border-gray-200 flex items-center justify-center" style={{ width: RAG_COL_WIDTH }}>
             RAG
           </div>
-          <div className="flex-1 px-2 py-2 font-semibold text-gray-800 border-r border-gray-300">
-            <div className="flex items-center justify-center" style={{ minWidth: timelineContentWidth }}>
-              {headerMonths.map((month) => (
-                <div
-                  key={month.toISOString()}
-                  className="text-center font-semibold text-gray-700 border-l border-gray-200 first:border-l-0 flex items-center justify-center"
-                  style={{ width: MONTH_WIDTH, fontSize: '10px', height: '100%' }}
-                >
-                  {format(month, "MMM yy")}
-                </div>
-              ))}
-            </div>
+          <div className="flex-1 flex">
+            {headerMonths.map((month) => (
+              <div
+                key={month.toISOString()}
+                className="text-center font-semibold text-gray-600 border-l border-gray-200 flex items-center justify-center text-sm"
+                style={{ width: MONTH_WIDTH }}
+              >
+                {format(month, "MMM yyyy")}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -102,23 +97,21 @@ export default function PDFExportView({
           return (
             <div 
               key={capability.id} 
-              className={`flex border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`} 
-              style={{ height: ROW_HEIGHT }}
+              className={`flex border-t border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`} 
+              style={{ minHeight: ROW_HEIGHT }}
             >
               {/* Capability Name */}
-              <div className="w-64 px-3 py-2 border-r border-gray-300 flex items-center">
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900 text-xs leading-tight truncate">
-                    {capability.name}
-                  </div>
-                  <div className="text-gray-500 text-xs mt-0.5">
-                    V{activePlan.version}
-                  </div>
-                </div>
+              <div className="px-4 py-2 border-r border-gray-200 flex items-center" style={{ width: LEFT_PANEL_WIDTH }}>
+                <span className="font-medium text-gray-900 text-sm truncate" title={capability.name}>
+                  {capability.name}
+                </span>
+                <span className="ml-2 text-sm text-gray-500 font-normal">
+                  v{activePlan.version}
+                </span>
               </div>
               
               {/* RAG Status */}
-              <div className="w-12 px-1 py-2 border-r border-gray-300 flex items-center justify-center">
+              <div className="px-2 py-2 border-r border-gray-200 flex items-center justify-center" style={{ width: RAG_COL_WIDTH }}>
                 <div
                   className={`w-3 h-3 rounded-full ${
                     capability.ragStatus === "Red"
@@ -132,8 +125,8 @@ export default function PDFExportView({
               </div>
               
               {/* Timeline */}
-              <div className="flex-1 px-2 py-2 border-r border-gray-300">
-                <div className="relative flex items-center" style={{ minWidth: timelineContentWidth, height: '24px' }}>
+              <div className="flex-1 relative">
+                <div className="relative w-full h-full flex items-center px-1" style={{ height: ROW_HEIGHT }}>
                   {phases.map((phase) => {
                     const startDate = parsePlanDate(activePlan[phase.startField]);
                     const endDate = parsePlanDate(activePlan[phase.endField]);
@@ -144,16 +137,15 @@ export default function PDFExportView({
                     return (
                       <div
                         key={phase.key}
-                        className={`absolute h-5 rounded ${phase.color} shadow-sm flex items-center justify-center`}
+                        className={`absolute h-7 rounded ${phase.color} flex items-center justify-center overflow-hidden shadow-sm`}
                         style={{
                           left: position.left,
                           width: position.width,
                           top: '50%',
                           transform: 'translateY(-50%)',
-                          minWidth: '40px',
                         }}
                       >
-                        <div className="text-white font-medium px-1 truncate text-xs">
+                        <div className="text-white font-medium px-2 truncate text-xs">
                           {phase.label}
                         </div>
                       </div>
@@ -167,13 +159,13 @@ export default function PDFExportView({
       </div>
 
       {/* Legend */}
-      <div className="mt-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-2">Phase Legend</h3>
-        <div className="flex flex-wrap gap-3">
+      <div className="mt-6">
+        <h3 className="text-base font-semibold text-gray-800 mb-3">Phase Legend</h3>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
           {phases.map((phase) => (
-            <div key={phase.key} className="flex items-center gap-1">
-              <div className={`w-3 h-3 rounded ${phase.color}`} />
-              <span className="text-xs font-medium text-gray-700">{phase.label}</span>
+            <div key={phase.key} className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded-sm ${phase.color}`} />
+              <span className="text-sm font-medium text-gray-700">{phase.label}</span>
             </div>
           ))}
         </div>
@@ -181,3 +173,4 @@ export default function PDFExportView({
     </div>
   );
 }
+
