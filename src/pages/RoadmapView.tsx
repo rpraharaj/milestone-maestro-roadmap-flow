@@ -72,11 +72,11 @@ export default function RoadmapView() {
     return dates;
   };
 
-  // Calculate the full scrollable timeline bounds
+  // Calculate the full scrollable timeline bounds (for scroll area)
   const calculateFullTimelineBounds = () => {
     const allPlanDates = getAllPlanDates();
     
-    // Default timeline: 1 month before, 11 after current date
+    // Always include the default view range
     let timelineStart = startOfMonth(subMonths(now, 1));
     let timelineEnd = endOfMonth(addMonths(now, 11));
     
@@ -88,6 +88,7 @@ export default function RoadmapView() {
       const earliestMonth = startOfMonth(subMonths(earliestPlanDate, 1));
       const latestMonth = endOfMonth(addMonths(latestPlanDate, 1));
       
+      // Only extend beyond default range if plans exist outside it
       timelineStart = dateMin([timelineStart, earliestMonth]);
       timelineEnd = dateMax([timelineEnd, latestMonth]);
     }
@@ -95,16 +96,21 @@ export default function RoadmapView() {
     return { timelineStart, timelineEnd };
   };
 
-  // Default visible timeline (what user sees initially)
+  // Default visible timeline (current month + 1 before + 11 after)
   const defaultVisibleStart = startOfMonth(subMonths(now, 1));
   const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
   
   // Full scrollable timeline (includes all historical data)
   const { timelineStart: fullTimelineStart, timelineEnd: fullTimelineEnd } = calculateFullTimelineBounds();
   
-  // Use full timeline for calculations but default view for initial display
+  // Use full timeline for the scrollable area
   const headerMonths = eachMonthOfInterval({ start: fullTimelineStart, end: fullTimelineEnd });
   const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
+
+  // Calculate initial scroll position to show default view
+  const defaultViewMonths = eachMonthOfInterval({ start: defaultVisibleStart, end: defaultVisibleEnd });
+  const monthsBeforeDefault = eachMonthOfInterval({ start: fullTimelineStart, end: subMonths(defaultVisibleStart, 1) });
+  const initialScrollLeft = monthsBeforeDefault.length * MONTH_WIDTH;
 
   const toggleHistory = (capabilityId: string) => {
     setShowHistory(prev => ({
@@ -258,7 +264,20 @@ export default function RoadmapView() {
               </div>
 
               {/* Visual Timeline */}
-              <div className="flex-1 overflow-x-auto">
+              <div 
+                className="flex-1 overflow-x-auto"
+                style={{ 
+                  scrollBehavior: 'smooth',
+                }}
+                ref={(ref) => {
+                  if (ref && initialScrollLeft > 0) {
+                    // Set initial scroll position to show default view
+                    setTimeout(() => {
+                      ref.scrollLeft = initialScrollLeft;
+                    }, 100);
+                  }
+                }}
+              >
                 <div style={{ minWidth: timelineContentWidth }}>
                   {/* Timeline Header */}
                   <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
