@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, Edit, Trash2, Calendar } from "lucide-react";
 import MilestoneDialog from "@/components/MilestoneDialog";
 import { Milestone } from "@/types";
@@ -52,11 +51,14 @@ const MilestoneManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Milestone Management</h1>
-          <p className="text-gray-600 mt-2">Track and manage project milestones</p>
-        </div>
+      {/* Title section at very top */}
+      <div className="mb-2">
+        <h1 className="text-3xl font-bold text-gray-900">Milestone Management</h1>
+        <p className="text-gray-600 mt-2">Track and manage project milestones</p>
+      </div>
+      
+      {/* Right-aligned add button below title */}
+      <div className="flex justify-end mb-2">
         <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           Add Milestone
