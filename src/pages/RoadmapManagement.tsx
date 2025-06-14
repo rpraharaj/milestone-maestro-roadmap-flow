@@ -103,7 +103,7 @@ const RoadmapManagement = () => {
       {DATE_FIELDS.map((field) => (
         <TableCell key={field.key} className="text-center text-sm py-2 px-2">
           {plan[field.key] && plan[field.key] instanceof Date
-            ? format(plan[field.key], "MMM dd")
+            ? format(plan[field.key], "MMM dd, yyyy")
             : "-"}
         </TableCell>
       ))}
@@ -115,9 +115,10 @@ const RoadmapManagement = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => openCreatePlan(cap.id)}
-                className="h-7 px-2 text-xs"
+                className="h-8 w-8 p-0"
+                title="Edit Plan"
               >
-                <Edit className="h-3 w-3 mr-1" /> Edit
+                <Edit className="h-4 w-4" />
               </Button>
             )}
             <AlertDialog>
@@ -125,10 +126,10 @@ const RoadmapManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  title="Delete Plan"
                 >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Delete
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -156,14 +157,14 @@ const RoadmapManagement = () => {
                 size="sm"
                 onClick={() => toggleHistory(cap.id)}
                 className={classNames(
-                  "h-7 px-2 text-xs",
+                  "h-8 w-8 p-0",
                   showHistory === cap.id
                     ? "ring-1 ring-blue-300"
                     : ""
                 )}
+                title={showHistory === cap.id ? "Hide History" : "Show History"}
               >
-                <History className="h-3 w-3 mr-1" />
-                {showHistory === cap.id ? "Hide" : "History"}
+                <History className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -207,9 +208,6 @@ const RoadmapManagement = () => {
 
       {/* Main table */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Capability Plans</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto border-t">
             <Table>
@@ -256,7 +254,8 @@ const RoadmapManagement = () => {
                           <Button
                             size="sm"
                             onClick={() => openCreatePlan(cap.id)}
-                            className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                            className="h-8 px-3 text-xs bg-blue-600 hover:bg-blue-700"
+                            title="Create Plan"
                           >
                             <Plus className="h-3 w-3 mr-1" />
                             Create Plan
