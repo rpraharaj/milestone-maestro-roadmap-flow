@@ -168,24 +168,34 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteRoadmapPlan = (planId: string) => {
     setData(prev => {
+      const deletedPlan = prev.roadmapPlans.find(plan => plan.id === planId);
+      if (!deletedPlan) return prev;
+      
+      // Remove the plan
       const updatedPlans = prev.roadmapPlans.filter(plan => plan.id !== planId);
       
-      // Find the capability that had this plan
-      const deletedPlan = prev.roadmapPlans.find(plan => plan.id === planId);
-      if (deletedPlan && deletedPlan.isActive) {
-        // If we're deleting the active plan, make the most recent remaining plan active
-        const remainingPlans = updatedPlans
-          .filter(plan => plan.capabilityId === deletedPlan.capabilityId)
-          .sort((a, b) => b.version - a.version);
+      // Get all remaining plans for the same capability
+      const remainingPlansForCapability = updatedPlans
+        .filter(plan => plan.capabilityId === deletedPlan.capabilityId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()); // Sort by creation date
+      
+      // Resequence versions starting from 1
+      remainingPlansForCapability.forEach((plan, index) => {
+        plan.version = index + 1;
+      });
+      
+      // If we deleted the active plan, make the most recent remaining plan active
+      if (deletedPlan.isActive && remainingPlansForCapability.length > 0) {
+        // Deactivate all plans first
+        updatedPlans.forEach(plan => {
+          if (plan.capabilityId === deletedPlan.capabilityId) {
+            plan.isActive = false;
+          }
+        });
         
-        if (remainingPlans.length > 0) {
-          const mostRecentPlan = remainingPlans[0];
-          updatedPlans.forEach(plan => {
-            if (plan.id === mostRecentPlan.id) {
-              plan.isActive = true;
-            }
-          });
-        }
+        // Make the highest version (most recent) plan active
+        const mostRecentPlan = remainingPlansForCapability[remainingPlansForCapability.length - 1];
+        mostRecentPlan.isActive = true;
       }
       
       return {
