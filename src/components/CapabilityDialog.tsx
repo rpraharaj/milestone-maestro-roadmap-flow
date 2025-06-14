@@ -35,8 +35,8 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
     sme: "",
     ba: "",
     milestone: "",
-    status: "Not Started" as const,
-    ragStatus: "Green" as const,
+    status: "Not Started" as Capability['status'],
+    ragStatus: "Green" as Capability['ragStatus'],
     notes: "",
   });
 
