@@ -1,46 +1,60 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, History } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import TimelineFixedColumns from "@/components/roadmap/TimelineFixedColumns";
 import VisualTimeline from "@/components/roadmap/VisualTimeline";
 import { useRoadmapPlanData } from "@/hooks/useRoadmapPlanData";
 
-const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // 104px for fixed columns
+const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
+const ROW_HEIGHT = 48;
+
+const columns = [
+  { label: 'Capability', width: 192 },
+  { label: 'RAG', width: 48 },
+  { label: 'Status', width: 112 },
+  { label: 'History', width: 64 },
+];
 
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const now = new Date();
 
-  // Timeline: 1 month before, 11 after
+  // Timeline: 1 month before, 11 after current date
   const timelineStart = startOfMonth(subMonths(now, 1));
   const timelineEnd = endOfMonth(addMonths(now, 11));
   const headerMonths = eachMonthOfInterval({ start: timelineStart, end: timelineEnd });
+  const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
 
-  // Plan data: only most recent (=active) plan unless history toggled (future: not implemented per row here)
-  const plansWithCapability: Array<{ capability: any; plan: any }> = [];
+  const toggleHistory = (capabilityId: string) => {
+    setShowHistory(prev => ({
+      ...prev,
+      [capabilityId]: !prev[capabilityId]
+    }));
+  };
+
+  // Get plans with capability data (only active plans unless history is toggled)
+  const plansWithCapability: Array<{ capability: any; plan: any; isActive: boolean }> = [];
   data.capabilities.forEach((cap) => {
     const activePlan = getActiveRoadmapPlan(cap.id);
     if (activePlan) {
-      plansWithCapability.push({ capability: cap, plan: activePlan });
+      plansWithCapability.push({ capability: cap, plan: activePlan, isActive: true });
     }
-    // Future: add older versions if showHistory[cap.id]
+    
+    // Add historical plans if history is toggled for this capability
+    if (showHistory[cap.id]) {
+      const history = getRoadmapHistory(cap.id);
+      history.slice(1).forEach((plan) => {
+        plansWithCapability.push({ capability: cap, plan, isActive: false });
+      });
+    }
   });
-
-  const timelineContentWidth = headerMonths.length * 120;
-  const rowHeight = 48;
-  const TIMELINE_LEFT_WIDTH = 192 + 48 + 112 + 64; // 416px (sum of all columns widths)
-  const columns = [
-    { label: 'Capability', width: 192 },  // w-48
-    { label: 'RAG', width: 48 },          // w-12
-    { label: 'Status', width: 112 },      // w-28
-    { label: '', width: 64 },             // w-16 (history)
-  ];
-  const MONTH_WIDTH = 120;
 
   function parsePlanDate(val: unknown, fallback: Date = new Date()): Date {
     if (
@@ -53,34 +67,20 @@ export default function RoadmapView() {
     return fallback;
   }
 
-  // Use refactored plan data hook
-  const allPlans = useRoadmapPlanData({
-    capabilities: data.capabilities,
-    getActiveRoadmapPlan,
-    getRoadmapHistory,
-    showHistory,
-  });
-
-  const visibleTimelineStart = timelineStart;
-  const visibleTimelineEnd = timelineEnd;
-  const actualContentStart = timelineStart;
-  const actualContentEnd = timelineEnd;
-
-  // Clamp phase bar positions within the visible timeline (same logic as before)
   const getPhasePosition = (startDate: Date, endDate: Date) => {
-    const clampedStart = dateMax([startDate, actualContentStart]);
-    const clampedEnd = dateMin([endDate, actualContentEnd]);
+    const clampedStart = dateMax([startDate, timelineStart]);
+    const clampedEnd = dateMin([endDate, timelineEnd]);
     if (clampedEnd < clampedStart) {
       return { left: "0%", width: "0%" };
     }
-    const startOffset = differenceInDays(clampedStart, actualContentStart);
+    const startOffset = differenceInDays(clampedStart, timelineStart);
     const duration = differenceInDays(clampedEnd, clampedStart);
-    const totalDays = differenceInDays(actualContentEnd, actualContentStart);
+    const totalDays = differenceInDays(timelineEnd, timelineStart);
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
     return {
-      left: `calc(${left}% )`,
-      width: `calc(${width}% )`,
+      left: `${left}%`,
+      width: `${width}%`,
     };
   };
 
@@ -92,7 +92,6 @@ export default function RoadmapView() {
     { key: 'uat', label: 'UAT', color: 'bg-red-500', startField: 'uatStartDate', endField: 'uatEndDate' },
   ];
 
-  // --- The layout ---
   return (
     <div className="space-y-6 flex flex-col">
       {plansWithCapability.length > 0 ? (
@@ -101,122 +100,133 @@ export default function RoadmapView() {
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="flex w-full">
-              {/* Fixed columns area (fills the left edge, locks on scroll) */}
-              <div
-                className="z-10 bg-white border-r border-gray-200 flex flex-col"
-                style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}
+            <div className="flex">
+              {/* Fixed Columns */}
+              <div 
+                className="flex-shrink-0 bg-white border-r border-gray-200"
+                style={{ width: TIMELINE_LEFT_WIDTH }}
               >
-                {/* Header row */}
-                <div className="flex" style={{ height: rowHeight }}>
+                {/* Header Row */}
+                <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
                   {columns.map((col) => (
                     <div
                       key={col.label}
-                      className="text-sm font-medium text-gray-600 flex items-center border-r last:border-r-0 border-gray-200 px-3"
-                      style={{
-                        minWidth: col.width,
-                        maxWidth: col.width,
-                        width: col.width,
-                        height: rowHeight,
-                      }}
+                      className="flex items-center justify-center text-sm font-medium text-gray-600 border-r border-gray-200 last:border-r-0"
+                      style={{ width: col.width, height: ROW_HEIGHT }}
                     >
                       {col.label}
                     </div>
                   ))}
                 </div>
-                {/* Capability rows */}
-                {plansWithCapability.map(({ capability, plan }) => {
-                  // If you want to implement history, add below here
-                  return (
-                    <div key={capability.id} className="flex" style={{ height: rowHeight }}>
-                      {/* Name column */}
-                      <div className="w-48 flex items-center px-3 h-full border-b border-gray-100">
-                        <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
-                          {capability.name}
-                        </span>
+                
+                {/* Data Rows */}
+                {data.capabilities.map((capability) => {
+                  const activePlan = getActiveRoadmapPlan(capability.id);
+                  const history = getRoadmapHistory(capability.id);
+                  const hasHistory = history.length > 1;
+                  const plansToShow = showHistory[capability.id] 
+                    ? [activePlan, ...history.slice(1)].filter(Boolean)
+                    : activePlan ? [activePlan] : [];
+                  
+                  return plansToShow.map((plan, planIndex) => {
+                    const isActive = planIndex === 0;
+                    return (
+                      <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: ROW_HEIGHT }}>
+                        {/* Capability Name */}
+                        <div className="flex items-center px-3 border-r border-gray-200" style={{ width: columns[0].width }}>
+                          <span className="font-medium truncate" title={capability.name}>
+                            {capability.name}
+                          </span>
+                          {!isActive && (
+                            <span className="ml-2 text-xs text-gray-400">v{plan.version}</span>
+                          )}
+                        </div>
+                        
+                        {/* RAG Status */}
+                        <div className="flex items-center justify-center border-r border-gray-200" style={{ width: columns[1].width }}>
+                          <span
+                            className={`inline-block h-3 w-3 rounded-full ${
+                              capability.ragStatus === "Red"
+                                ? "bg-red-500"
+                                : capability.ragStatus === "Amber"
+                                ? "bg-amber-400"
+                                : "bg-green-500"
+                            }`}
+                            title={capability.ragStatus}
+                          />
+                        </div>
+                        
+                        {/* Status */}
+                        <div className="flex items-center px-3 text-xs text-gray-600 border-r border-gray-200" style={{ width: columns[2].width }}>
+                          {capability.status}
+                        </div>
+                        
+                        {/* History Toggle */}
+                        <div className="flex items-center justify-center" style={{ width: columns[3].width }}>
+                          {isActive && hasHistory && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleHistory(capability.id)}
+                              className="h-8 w-8 p-0"
+                              title={showHistory[capability.id] ? "Hide History" : "Show History"}
+                            >
+                              <History className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      {/* RAG column */}
-                      <div className="w-12 flex items-center justify-center h-full border-b border-gray-100">
-                        <span
-                          className={`inline-block h-3 w-3 rounded-full ${
-                            capability.ragStatus === "Red"
-                              ? "bg-red-500"
-                              : capability.ragStatus === "Amber"
-                              ? "bg-amber-400"
-                              : "bg-green-500"
-                          }`}
-                          title={capability.ragStatus}
-                        />
-                      </div>
-                      {/* Status column */}
-                      <div className="w-28 flex items-center h-full text-xs text-gray-600 border-b border-gray-100">
-                        {capability.status}
-                      </div>
-                      {/* History icon column (not activated yet) */}
-                      <div className="w-16 flex items-center justify-center h-full border-b border-gray-100"> </div>
-                    </div>
-                  );
+                    );
+                  });
                 })}
               </div>
-              {/* Timeline area (right) - horizontally scrolls */}
-              <div
-                className="overflow-x-auto flex-1"
-                style={{
-                  minWidth: `${timelineContentWidth}px`,
-                  maxWidth: `calc(100vw - ${TIMELINE_LEFT_WIDTH}px)`,
-                  borderBottom: "1px solid #e5e7eb",
-                }}
-              >
-                {/* Grid: header + rows */}
-                <div>
-                  {/* Months header row */}
-                  <div style={{ minWidth: `${timelineContentWidth}px` }}>
-                    <div className="flex">
-                      {headerMonths.map((month) => (
-                        <div
-                          key={month.toISOString()}
-                          className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center bg-gray-50"
-                          style={{
-                            minWidth: `${MONTH_WIDTH}px`,
-                            width: `${MONTH_WIDTH}px`,
-                            height: rowHeight,
-                          }}
-                        >
-                          {format(month, "MMM yyyy")}
-                        </div>
-                      ))}
-                    </div>
+
+              {/* Visual Timeline */}
+              <div className="flex-1 overflow-x-auto">
+                <div style={{ minWidth: timelineContentWidth }}>
+                  {/* Timeline Header */}
+                  <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
+                    {headerMonths.map((month) => (
+                      <div
+                        key={month.toISOString()}
+                        className="flex items-center justify-center text-sm font-medium text-gray-600 border-l border-gray-200 first:border-l-0"
+                        style={{ width: MONTH_WIDTH, height: ROW_HEIGHT }}
+                      >
+                        {format(month, "MMM yyyy")}
+                      </div>
+                    ))}
                   </div>
-                  {/* Plan rows */}
-                  {plansWithCapability.map(({ plan }) => (
+                  
+                  {/* Timeline Rows */}
+                  {plansWithCapability.map(({ capability, plan, isActive }) => (
                     <div
-                      key={plan.id}
-                      className="relative flex items-center"
-                      style={{
-                        minWidth: `${timelineContentWidth}px`,
-                        width: `${timelineContentWidth}px`,
-                        maxWidth: `${timelineContentWidth}px`,
-                        height: rowHeight,
-                      }}
+                      key={`${capability.id}-${plan.id}`}
+                      className="relative border-b border-gray-100"
+                      style={{ height: ROW_HEIGHT, minWidth: timelineContentWidth }}
                     >
-                      {/* Timeline bars for this plan */}
-                      <div className="relative w-full h-7 flex items-center">
+                      <div className="relative w-full h-full flex items-center px-2">
                         {phases.map((phase) => {
-                          const startDate = new Date(plan[phase.startField]);
-                          const endDate = new Date(plan[phase.endField]);
+                          const startDate = parsePlanDate(plan[phase.startField]);
+                          const endDate = parsePlanDate(plan[phase.endField]);
                           const position = getPhasePosition(startDate, endDate);
+                          
+                          if (position.width === "0%") return null;
+                          
                           return (
                             <div
                               key={phase.key}
-                              className={`absolute h-7 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                              className={`absolute h-6 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
                               style={{
                                 left: position.left,
                                 width: position.width,
-                                top: 0,
+                                top: "50%",
+                                transform: "translateY(-50%)",
                               }}
                               title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                             >
-                              <div className="text-xs text-white font-medium p-1 truncate">{phase.label}</div>
+                              <div className="text-xs text-white font-medium px-2 truncate">
+                                {phase.label}
+                              </div>
                             </div>
                           );
                         })}
@@ -241,7 +251,8 @@ export default function RoadmapView() {
           </CardContent>
         </Card>
       )}
-      {/* Legend BELOW timeline */}
+      
+      {/* Legend */}
       <Card className="order-2">
         <CardHeader>
           <CardTitle className="text-lg">Phase Legend</CardTitle>
