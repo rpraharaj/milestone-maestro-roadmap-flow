@@ -40,6 +40,12 @@ export default function RoadmapView() {
     let maxDate = timelineDefaultEnd;
     allPlans.forEach(({ plan }) => {
       // Only include values which are strings, numbers, or Date (skip boolean, undefined, etc)
+      function isValidDateInput(d: unknown): d is string | number | Date {
+        return (
+          (typeof d === "string" || typeof d === "number" || d instanceof Date)
+          && typeof d !== "boolean"
+        );
+      }
       const dates = [
         plan.requirementStartDate,
         plan.requirementEndDate,
@@ -52,8 +58,8 @@ export default function RoadmapView() {
         plan.uatStartDate,
         plan.uatEndDate,
       ]
-        .filter(d => !!d && (typeof d === "string" || typeof d === "number" || d instanceof Date))
-        .map(d => new Date(d as string | number | Date));
+        .filter(isValidDateInput)
+        .map(d => new Date(d));
       minDate = dateMin([minDate, ...dates]);
       maxDate = dateMax([maxDate, ...dates]);
     });
