@@ -75,45 +75,55 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('projectManagerData', JSON.stringify(data));
   }, [data]);
 
-  const addCapability = (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('🔄 DataContext: addCapability called with:', capability);
+  const addCapability = async (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => {
+    console.log('🔄 DataContext: addCapability started with:', capability);
     
-    try {
-      // Validate required fields
-      if (!capability.name || capability.name.trim() === '') {
-        console.error('❌ DataContext: Capability name is required');
-        throw new Error('Capability name is required');
-      }
+    return new Promise<void>((resolve, reject) => {
+      try {
+        // Simple validation
+        if (!capability.name || capability.name.trim() === '') {
+          console.error('❌ DataContext: Capability name is required');
+          reject(new Error('Capability name is required'));
+          return;
+        }
 
-      const now = new Date();
-      const newCapability: Capability = {
-        id: generateId(),
-        name: capability.name.trim(),
-        workstreamLead: capability.workstreamLead || '',
-        sme: capability.sme || '',
-        ba: capability.ba || '',
-        milestone: capability.milestone || '',
-        status: capability.status || 'Not Started',
-        ragStatus: capability.ragStatus || 'Green',
-        notes: capability.notes || '',
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      console.log('✅ DataContext: New capability created:', newCapability);
-
-      setData(prev => {
-        const newData = {
-          ...prev,
-          capabilities: [...prev.capabilities, newCapability],
+        const now = new Date();
+        const newCapability: Capability = {
+          id: generateId(),
+          name: capability.name.trim(),
+          workstreamLead: capability.workstreamLead || '',
+          sme: capability.sme || '',
+          ba: capability.ba || '',
+          milestone: capability.milestone || '',
+          status: capability.status || 'Not Started',
+          ragStatus: capability.ragStatus || 'Green',
+          notes: capability.notes || '',
+          createdAt: now,
+          updatedAt: now,
         };
-        console.log('✅ DataContext: State updated successfully');
-        return newData;
-      });
-    } catch (error) {
-      console.error('❌ DataContext: Error in addCapability:', error);
-      throw error;
-    }
+
+        console.log('✅ DataContext: New capability created:', newCapability);
+
+        setData(prev => {
+          const newData = {
+            ...prev,
+            capabilities: [...prev.capabilities, newCapability],
+          };
+          console.log('✅ DataContext: State updated successfully, total capabilities:', newData.capabilities.length);
+          return newData;
+        });
+
+        // Resolve after state update
+        setTimeout(() => {
+          console.log('✅ DataContext: addCapability completed successfully');
+          resolve();
+        }, 0);
+
+      } catch (error) {
+        console.error('❌ DataContext: Error in addCapability:', error);
+        reject(error);
+      }
+    });
   };
 
   const updateCapability = (id: string, updates: Partial<Capability>) => {

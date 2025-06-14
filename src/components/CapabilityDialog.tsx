@@ -39,9 +39,10 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
     ragStatus: "Green" as Capability['ragStatus'],
     notes: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 CapabilityDialog: Dialog opened, isOpen:', isOpen, 'capability:', capability);
+    console.log('🔄 CapabilityDialog: Dialog state changed - isOpen:', isOpen, 'capability:', capability);
     
     if (capability) {
       setFormData({
@@ -49,9 +50,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
         workstreamLead: capability.workstreamLead,
         sme: capability.sme,
         ba: capability.ba,
-        milestone: capability.milestone && capability.milestone.length
-          ? capability.milestone
-          : "none",
+        milestone: capability.milestone && capability.milestone.length ? capability.milestone : "none",
         status: capability.status,
         ragStatus: capability.ragStatus,
         notes: capability.notes,
@@ -70,25 +69,33 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
     }
   }, [capability, isOpen]);
 
+  const validateForm = () => {
+    if (!formData.name || !formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Capability name is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔄 CapabilityDialog: Form submitted with data:', formData);
-
+    if (isSubmitting) return;
+    
+    console.log('🔄 CapabilityDialog: Form submission started');
+    
     try {
-      // Validate form data
-      if (!formData.name || !formData.name.trim()) {
-        console.error('❌ CapabilityDialog: Capability name is required');
-        toast({
-          title: "Error",
-          description: "Capability name is required",
-          variant: "destructive",
-        });
+      setIsSubmitting(true);
+      
+      if (!validateForm()) {
         return;
       }
 
-      // Prepare form data for submission
-      const preparedFormData = {
+      const preparedData = {
         name: formData.name.trim(),
         workstreamLead: formData.workstreamLead.trim(),
         sme: formData.sme.trim(),
@@ -99,18 +106,18 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
         notes: formData.notes.trim(),
       };
 
-      console.log('🔄 CapabilityDialog: Prepared data for submission:', preparedFormData);
+      console.log('🔄 CapabilityDialog: Prepared data:', preparedData);
 
       if (capability) {
-        console.log('🔄 CapabilityDialog: Updating existing capability');
-        await updateCapability(capability.id, preparedFormData);
+        console.log('🔄 CapabilityDialog: Updating capability');
+        await updateCapability(capability.id, preparedData);
         toast({
           title: "Success",
           description: "Capability updated successfully",
         });
       } else {
         console.log('🔄 CapabilityDialog: Adding new capability');
-        await addCapability(preparedFormData);
+        await addCapability(preparedData);
         toast({
           title: "Success",
           description: "Capability added successfully",
@@ -120,17 +127,18 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
       console.log('✅ CapabilityDialog: Operation completed successfully');
       onClose();
     } catch (error) {
-      console.error('❌ CapabilityDialog: Error in handleSubmit:', error);
+      console.error('❌ CapabilityDialog: Error in form submission:', error);
       toast({
         title: "Error",
-        description: `Failed to ${capability ? 'update' : 'add'} capability: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to ${capability ? 'update' : 'add'} capability. Please try again.`,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleChange = (field: string, value: string) => {
-    console.log('🔄 CapabilityDialog: Field changed:', field, 'value:', value);
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -156,6 +164,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="Enter capability name"
                 required
+                disabled={isSubmitting}
               />
             </div>
             
@@ -166,6 +175,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                 value={formData.workstreamLead}
                 onChange={(e) => handleChange("workstreamLead", e.target.value)}
                 placeholder="Enter workstream lead"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -176,6 +186,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                 value={formData.sme}
                 onChange={(e) => handleChange("sme", e.target.value)}
                 placeholder="Enter SME"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -186,12 +197,17 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                 value={formData.ba}
                 onChange={(e) => handleChange("ba", e.target.value)}
                 placeholder="Enter BA"
+                disabled={isSubmitting}
               />
             </div>
             
             <div>
               <Label htmlFor="milestone">Milestone</Label>
-              <Select value={formData.milestone} onValueChange={(value) => handleChange("milestone", value)}>
+              <Select 
+                value={formData.milestone} 
+                onValueChange={(value) => handleChange("milestone", value)}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select milestone" />
                 </SelectTrigger>
@@ -208,7 +224,11 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
             
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: any) => handleChange("status", value)}>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value: any) => handleChange("status", value)}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -223,7 +243,11 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
             
             <div>
               <Label htmlFor="ragStatus">RAG Status</Label>
-              <Select value={formData.ragStatus} onValueChange={(value: any) => handleChange("ragStatus", value)}>
+              <Select 
+                value={formData.ragStatus} 
+                onValueChange={(value: any) => handleChange("ragStatus", value)}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -243,16 +267,17 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                 onChange={(e) => handleChange("notes", e.target.value)}
                 placeholder="Enter notes..."
                 rows={4}
+                disabled={isSubmitting}
               />
             </div>
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">
-              {capability ? "Update" : "Add"} Capability
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Processing..." : capability ? "Update" : "Add"} Capability
             </Button>
           </div>
         </form>
