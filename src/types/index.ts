@@ -17,6 +17,7 @@ export interface Milestone {
   id: string;
   name: string;
   date: Date;
+  capabilityIds: string[];
   createdAt: Date;
   updatedAt: Date;
 }
