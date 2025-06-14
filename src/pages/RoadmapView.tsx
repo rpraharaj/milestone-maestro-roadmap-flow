@@ -38,14 +38,16 @@ export default function RoadmapView() {
   const [isFullView, setIsFullView] = useState(false);
   const [capabilityFilter, setCapabilityFilter] = useState<string>("");
   const [selectedCapability, setSelectedCapability] = useState<string>("all");
+  const [selectedMilestone, setSelectedMilestone] = useState<string>("all");
   const isMobile = useIsMobile();
   const now = new Date();
 
-  // Filter capabilities based on search and selection
+  // Filter capabilities based on search, selection, and milestone
   const filteredCapabilities = data.capabilities.filter(capability => {
     const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
     const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
-    return matchesSearch && matchesSelection;
+    const matchesMilestone = selectedMilestone === "all" || capability.milestone === selectedMilestone;
+    return matchesSearch && matchesSelection && matchesMilestone;
   });
 
   const handleColumnToggle = (column: 'rag' | 'status' | 'milestone' | 'history') => {
@@ -478,6 +480,23 @@ export default function RoadmapView() {
                   {data.capabilities.map((capability) => (
                     <SelectItem key={capability.id} value={capability.id}>
                       {capability.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Milestone Dropdown */}
+            <div className="w-full sm:w-48">
+              <Select value={selectedMilestone} onValueChange={setSelectedMilestone}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select milestone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Milestones</SelectItem>
+                  {data.milestones.map((milestone) => (
+                    <SelectItem key={milestone.id} value={milestone.name}>
+                      {milestone.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
