@@ -40,6 +40,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
     uatEndDate: new Date(),
   });
   const [openCalendars, setOpenCalendars] = useState<Record<string, boolean>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (capabilityId && isOpen) {
@@ -79,10 +80,48 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
   const capability = capabilityId ? data.capabilities.find(c => c.id === capabilityId) : null;
   const existingPlan = capabilityId ? getActiveRoadmapPlan(capabilityId) : null;
 
+  const validateDates = (data: typeof formData) => {
+    const errors: Record<string, string> = {};
+
+    if (data.requirementEndDate <= data.requirementStartDate) {
+      errors.requirementEndDate = "Requirement end date must be later than start date";
+    }
+
+    if (data.designEndDate <= data.designStartDate) {
+      errors.designEndDate = "Design end date must be later than start date";
+    }
+
+    if (data.devEndDate <= data.devStartDate) {
+      errors.devEndDate = "Development end date must be later than start date";
+    }
+
+    if (data.cstEndDate <= data.cstStartDate) {
+      errors.cstEndDate = "CST end date must be later than start date";
+    }
+
+    if (data.uatEndDate <= data.uatStartDate) {
+      errors.uatEndDate = "UAT end date must be later than start date";
+    }
+
+    return errors;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!capabilityId) return;
+
+    const errors = validateDates(formData);
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the date validation errors before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (existingPlan) {
       updateRoadmapPlan(capabilityId, { ...formData, isActive: true });
@@ -103,7 +142,26 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
 
   const handleDateSelect = (field: string, date: Date | undefined) => {
     if (date) {
-      setFormData(prev => ({ ...prev, [field]: date }));
+      const newFormData = { ...formData, [field]: date };
+      setFormData(newFormData);
+      
+      // Clear validation errors for this field and related fields
+      const newErrors = { ...validationErrors };
+      delete newErrors[field];
+      
+      // If this is a start date, clear the related end date error
+      if (field.includes('Start')) {
+        const endField = field.replace('Start', 'End');
+        delete newErrors[endField];
+      }
+      
+      // If this is an end date, clear the related start date error
+      if (field.includes('End')) {
+        const startField = field.replace('End', 'Start');
+        delete newErrors[startField];
+      }
+      
+      setValidationErrors(newErrors);
       setOpenCalendars(prev => ({ ...prev, [field]: false }));
     }
   };
@@ -152,7 +210,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal"
+                          className={cn(
+                            "w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal",
+                            validationErrors[phase.endField] && "border-red-500"
+                          )}
                         >
                           <CalendarIcon className="mr-1 h-3 w-3 text-gray-500" />
                           {format(formData[phase.startField as keyof typeof formData], "MMM dd, yyyy")}
@@ -178,7 +239,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal"
+                          className={cn(
+                            "w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal",
+                            validationErrors[phase.endField] && "border-red-500"
+                          )}
                         >
                           <CalendarIcon className="mr-1 h-3 w-3 text-gray-500" />
                           {format(formData[phase.endField as keyof typeof formData], "MMM dd, yyyy")}
@@ -196,6 +260,11 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                     </Popover>
                   </div>
                 </div>
+                {validationErrors[phase.endField] && (
+                  <div className="text-red-500 text-xs mt-1 md:mt-0 md:ml-2">
+                    {validationErrors[phase.endField]}
+                  </div>
+                )}
               </div>
             ))}
           </div>
