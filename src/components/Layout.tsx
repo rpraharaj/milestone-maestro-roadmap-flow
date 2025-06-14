@@ -3,13 +3,10 @@ import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Calendar, Map, MapPin, BarChart3, Settings, Target } from "lucide-react";
+import { Menu, X, Calendar, Map, MapPin, BarChart3, Settings, Target, Expand, Collapse } from "lucide-react";
 
 // Titles and subtitles for each main route
-const pageHeaders: Record<
-  string,
-  { title: string; subtitle: string }
-> = {
+const pageHeaders: Record<string, { title: string; subtitle: string }> = {
   "/": {
     title: "Project Dashboard",
     subtitle: "Overview of your project milestones and capabilities",
@@ -36,8 +33,12 @@ const pageHeaders: Record<
   },
 };
 
+const collapsedSidebarWidth = "w-16"; // collapsed: only icon
+const expandedSidebarWidth = "w-64"; // expanded: icon + text
+
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
   const navigation = [
@@ -70,15 +71,19 @@ const Layout = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "z-50 flex-shrink-0 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out",
-          "flex flex-col",
+          "z-50 flex-shrink-0 bg-white shadow-lg transition-transform duration-300 ease-in-out flex flex-col",
           sidebarOpen ? "fixed inset-y-0 left-0 translate-x-0" : "fixed inset-y-0 -translate-x-full",
-          "lg:static lg:translate-x-0"
+          "lg:static lg:translate-x-0",
+          sidebarCollapsed ? collapsedSidebarWidth : expandedSidebarWidth
         )}
         style={{ height: "100vh" }}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900">Project Manager</h1>
+          {!sidebarCollapsed && (
+            <h1 className="text-xl font-bold text-gray-900 transition-all duration-200 origin-left">
+              Project Manager
+            </h1>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -100,24 +105,44 @@ const Layout = () => {
                     "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
                     location.pathname === item.href
                       ? "bg-blue-100 text-blue-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                    sidebarCollapsed && "justify-center"
                   )}
                   onClick={() => setSidebarOpen(false)}
+                  title={sidebarCollapsed ? item.name : undefined}
                 >
                   <Icon
                     className={cn(
-                      "mr-3 h-5 w-5",
+                      "mr-3 h-5 w-5 transition-all",
                       location.pathname === item.href
                         ? "text-blue-500"
-                        : "text-gray-400 group-hover:text-gray-500"
+                        : "text-gray-400 group-hover:text-gray-500",
+                      sidebarCollapsed ? "mr-0" : "mr-3"
                     )}
                   />
-                  {item.name}
+                  {/* Only show text if sidebar expanded */}
+                  {!sidebarCollapsed && item.name}
                 </Link>
               );
             })}
           </div>
         </nav>
+        {/* Expand/Collapse Button at bottom */}
+        <div className="mt-auto pb-4 flex justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            className="rounded-full border"
+          >
+            {sidebarCollapsed ? (
+              <Expand className="w-5 h-5" />
+            ) : (
+              <Collapse className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
       </aside>
 
       {/* Main content */}
