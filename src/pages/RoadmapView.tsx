@@ -41,15 +41,11 @@ export default function RoadmapView() {
   const isMobile = useIsMobile();
   const now = new Date();
 
-  const handleColumnToggle = (column: 'rag' | 'status' | 'history' | 'milestone') => {
-    setVisibleColumns(prev => ({
-      ...prev,
-      [column]: !prev[column]
-    }));
-  };
-
-  const toggleFullView = () => {
-    setIsFullView(prev => !prev);
+  // Helper function to get milestone for a capability
+  const getMilestoneForCapability = (capabilityId: string) => {
+    return data.milestones.find(milestone => 
+      milestone.capabilityIds && milestone.capabilityIds.includes(capabilityId)
+    );
   };
 
   // Filter capabilities based on search and selection
@@ -519,10 +515,8 @@ export default function RoadmapView() {
                   
                   return plansToShow.map((plan, planIndex) => {
                     const isActive = planIndex === 0;
-                    // Find milestone for this capability
-                    const milestone = data.milestones.find(m => 
-                      m.capabilityIds.includes(capability.id)
-                    );
+                    // Get milestone for this specific capability
+                    const milestone = getMilestoneForCapability(capability.id);
                     
                     return (
                       <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: currentRowHeight }}>
@@ -564,7 +558,7 @@ export default function RoadmapView() {
                         {/* Technical Milestone */}
                         {visibleColumns.milestone && (
                           <div className={`flex items-center ${isMobile ? 'px-1' : 'px-2'} ${textSizes.content} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Milestone')?.width || 120 }}>
-                            <span className="truncate" title={milestone?.name || 'No milestone'}>
+                            <span className="truncate" title={milestone?.name || 'No milestone assigned'}>
                               {milestone?.name || '-'}
                             </span>
                           </div>
