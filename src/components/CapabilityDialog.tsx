@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
     workstreamLead: "",
     sme: "",
     ba: "",
-    milestone: "",
+    milestone: "none",
     status: "Not Started" as Capability['status'],
     ragStatus: "Green" as Capability['ragStatus'],
     notes: "",
@@ -47,7 +46,9 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
         workstreamLead: capability.workstreamLead,
         sme: capability.sme,
         ba: capability.ba,
-        milestone: capability.milestone,
+        milestone: capability.milestone && capability.milestone.length
+          ? capability.milestone
+          : "none",
         status: capability.status,
         ragStatus: capability.ragStatus,
         notes: capability.notes,
@@ -58,7 +59,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
         workstreamLead: "",
         sme: "",
         ba: "",
-        milestone: "",
+        milestone: "none",
         status: "Not Started",
         ragStatus: "Green",
         notes: "",
@@ -78,14 +79,20 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
       return;
     }
 
+    // If milestone is "none", save as "" (so backend/data thinks it's empty)
+    const preparedFormData = {
+      ...formData,
+      milestone: formData.milestone === "none" ? "" : formData.milestone,
+    };
+
     if (capability) {
-      updateCapability(capability.id, formData);
+      updateCapability(capability.id, preparedFormData);
       toast({
         title: "Success",
         description: "Capability updated successfully",
       });
     } else {
-      addCapability(formData);
+      addCapability(preparedFormData);
       toast({
         title: "Success",
         description: "Capability added successfully",
@@ -96,7 +103,10 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   return (
@@ -158,7 +168,7 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
                   <SelectValue placeholder="Select milestone" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No milestone</SelectItem>
+                  <SelectItem value="none">No milestone</SelectItem>
                   {data.milestones.map((milestone) => (
                     <SelectItem key={milestone.id} value={milestone.name}>
                       {milestone.name}
