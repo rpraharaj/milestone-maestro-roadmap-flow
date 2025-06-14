@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -156,7 +155,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           {format(formData[phase.startField as keyof typeof formData], "MMM dd, yyyy")}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                      <PopoverContent className="w-auto p-0 z-[100]" align="start">
                         <Calendar
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
@@ -164,8 +163,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
                           initialFocus
                           numberOfMonths={1}
-                          captionLayout="dropdown"
-                          className="pointer-events-auto"
+                          captionLayout="buttons"
                         />
                       </PopoverContent>
                     </Popover>
@@ -185,7 +183,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           {format(formData[phase.endField as keyof typeof formData], "MMM dd, yyyy")}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                      <PopoverContent className="w-auto p-0 z-[100]" align="start">
                         <Calendar
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
@@ -193,8 +191,7 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
                           initialFocus
                           numberOfMonths={1}
-                          captionLayout="dropdown"
-                          className="pointer-events-auto"
+                          captionLayout="buttons"
                         />
                       </PopoverContent>
                     </Popover>
