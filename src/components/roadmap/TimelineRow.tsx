@@ -94,8 +94,8 @@ export default function TimelineRow({
               </Button>
             )}
           </div>
-          {/* Timeline (phases bar) column */}
-          <div className="flex-1 relative h-10 px-2 min-w-0">
+          {/* Timeline (phases bar) column with a vertical divider */}
+          <div className="flex-1 relative h-10 px-2 min-w-0 border-l border-gray-200">
             <div className="relative h-full w-full">
               {phases.map(phase => {
                 const startDate = parsePlanDate(plan[phase.startField]);
@@ -125,3 +125,4 @@ export default function TimelineRow({
     </div>
   );
 }
+
