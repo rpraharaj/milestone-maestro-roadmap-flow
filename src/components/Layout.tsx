@@ -18,6 +18,9 @@ const Layout = () => {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  // Determine if we are on the milestones page
+  const isMilestonesPage = location.pathname === "/milestones";
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       {/* Sidebar: overlays on mobile, shows as static on desktop */}
@@ -84,20 +87,30 @@ const Layout = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <div className="flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200 lg:px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center space-x-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 h-auto min-h-16 px-4 bg-white border-b border-gray-200 lg:px-6 py-2">
+          {/* Left: mobile menu button (shows only on mobile) */}
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden mr-3"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             <span className="text-sm text-gray-500">
               {new Date().toLocaleDateString()}
             </span>
           </div>
+          {/* Center (for title + subtitle if on milestones page) */}
+          {isMilestonesPage && (
+            <div className="flex flex-col sm:items-start max-w-full">
+              <h1 className="text-2xl font-bold text-gray-900 leading-tight">Milestone Management</h1>
+              <p className="text-gray-600 text-xs sm:text-sm mt-0.5">Track and manage project milestones</p>
+            </div>
+          )}
+          {/* Right: Can add controls here if needed */}
         </div>
         <main className="flex-1 px-6 pt-2 pb-6 w-full mx-auto max-w-7xl">
           <Outlet />
@@ -108,3 +121,4 @@ const Layout = () => {
 };
 
 export default Layout;
+

@@ -51,13 +51,7 @@ const MilestoneManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Title section at very top */}
-      <div className="mb-2">
-        <h1 className="text-3xl font-bold text-gray-900">Milestone Management</h1>
-        <p className="text-gray-600 mt-2">Track and manage project milestones</p>
-      </div>
-      
-      {/* Right-aligned add button below title */}
+      {/* Right-aligned add button below header */}
       <div className="flex justify-end mb-2">
         <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
