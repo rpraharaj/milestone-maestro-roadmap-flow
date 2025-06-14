@@ -8,6 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2, Target } from "lucide-react";
 import CapabilityDialog from "@/components/CapabilityDialog";
 import { Capability } from "@/types";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 
 const CapabilityManagement = () => {
   const { data, deleteCapability } = useData();
@@ -22,7 +30,6 @@ const CapabilityManagement = () => {
                          capability.workstreamLead.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || capability.status === statusFilter;
     const matchesRag = ragFilter === "all" || capability.ragStatus === ragFilter;
-    
     return matchesSearch && matchesStatus && matchesRag;
   });
 
@@ -114,85 +121,88 @@ const CapabilityManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Capabilities Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredCapabilities.map((capability) => (
-          <Card key={capability.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg">{capability.name}</CardTitle>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(capability)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(capability.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+      {/* Capabilities Table View */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">Name</TableHead>
+                  <TableHead className="min-w-[120px]">Workstream Lead</TableHead>
+                  <TableHead className="min-w-[120px]">SME</TableHead>
+                  <TableHead className="min-w-[120px]">BA</TableHead>
+                  <TableHead className="min-w-[140px]">Milestone</TableHead>
+                  <TableHead className="min-w-[110px]">Status</TableHead>
+                  <TableHead className="min-w-[110px]">RAG</TableHead>
+                  <TableHead className="min-w-[160px]">Notes</TableHead>
+                  <TableHead className="min-w-[70px] text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCapabilities.map((capability) => (
+                  <TableRow key={capability.id}>
+                    <TableCell className="font-medium">{capability.name}</TableCell>
+                    <TableCell>{capability.workstreamLead}</TableCell>
+                    <TableCell>{capability.sme}</TableCell>
+                    <TableCell>{capability.ba}</TableCell>
+                    <TableCell>{capability.milestone || "-"}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusBadgeColor(capability.status)}>
+                        {capability.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getRagBadgeColor(capability.ragStatus)}>
+                        {capability.ragStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {capability.notes
+                        ? capability.notes.length > 100
+                          ? `${capability.notes.substring(0, 100)}...`
+                          : capability.notes
+                        : "-"
+                      }
+                    </TableCell>
+                    <TableCell className="flex gap-2 justify-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(capability)}
+                        aria-label="Edit capability"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(capability.id)}
+                        aria-label="Delete capability"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {filteredCapabilities.length === 0 && (
+            <div className="p-12 text-center">
+              <div className="text-gray-500">
+                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-medium mb-2">No capabilities found</h3>
+                <p className="text-sm">
+                  {data.capabilities.length === 0 
+                    ? "Get started by adding your first capability"
+                    : "Try adjusting your search or filter criteria"}
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <Badge className={getStatusBadgeColor(capability.status)}>
-                  {capability.status}
-                </Badge>
-                <Badge className={getRagBadgeColor(capability.ragStatus)}>
-                  {capability.ragStatus}
-                </Badge>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Lead:</span> {capability.workstreamLead}
-                </div>
-                <div>
-                  <span className="font-medium">SME:</span> {capability.sme}
-                </div>
-                <div>
-                  <span className="font-medium">BA:</span> {capability.ba}
-                </div>
-                {capability.milestone && (
-                  <div>
-                    <span className="font-medium">Milestone:</span> {capability.milestone}
-                  </div>
-                )}
-              </div>
-              
-              {capability.notes && (
-                <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                  {capability.notes.length > 100 
-                    ? `${capability.notes.substring(0, 100)}...` 
-                    : capability.notes}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredCapabilities.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="text-gray-500">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No capabilities found</h3>
-              <p className="text-sm">
-                {data.capabilities.length === 0 
-                  ? "Get started by adding your first capability"
-                  : "Try adjusting your search or filter criteria"}
-              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       <CapabilityDialog
         capability={selectedCapability}
@@ -204,3 +214,4 @@ const CapabilityManagement = () => {
 };
 
 export default CapabilityManagement;
+
