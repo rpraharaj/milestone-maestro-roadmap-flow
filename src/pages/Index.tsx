@@ -1,6 +1,8 @@
+
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Calendar, Map, BarChart3 } from "lucide-react";
+import { Target, Calendar, Map, BarChart3, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { format, isAfter, isBefore, addDays } from "date-fns";
 
 const Index = () => {
   const { data } = useData();
@@ -36,32 +38,45 @@ const Index = () => {
     },
   ];
 
-  const ragCounts = {
-    Red: data.capabilities.filter(cap => cap.ragStatus === 'Red').length,
-    Amber: data.capabilities.filter(cap => cap.ragStatus === 'Amber').length,
-    Green: data.capabilities.filter(cap => cap.ragStatus === 'Green').length,
+  // Get milestone status based on target date
+  const getMilestoneStatus = (targetDate: Date) => {
+    const now = new Date();
+    const warningThreshold = addDays(targetDate, -7); // 7 days before target
+    
+    if (isBefore(now, warningThreshold)) {
+      return { status: 'on-track', icon: Clock, color: 'text-green-600', bgColor: 'bg-green-100' };
+    } else if (isBefore(now, targetDate)) {
+      return { status: 'warning', icon: AlertCircle, color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    } else {
+      return { status: 'overdue', icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100' };
+    }
   };
 
+  // Sort milestones by target date
+  const sortedMilestones = [...data.milestones].sort((a, b) => 
+    new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime()
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <Card key={stat.title} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
                       {stat.title}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">
+                    <p className="text-lg sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  <div className={`p-2 sm:p-3 rounded-full ${stat.bgColor} flex-shrink-0 ml-2`}>
+                    <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -70,68 +85,67 @@ const Index = () => {
         })}
       </div>
 
-      {/* RAG Status Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>RAG Status Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Red</span>
-                </div>
-                <span className="text-lg font-bold">{ragCounts.Red}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-amber-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Amber</span>
-                </div>
-                <span className="text-lg font-bold">{ragCounts.Amber}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Green</span>
-                </div>
-                <span className="text-lg font-bold">{ragCounts.Green}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {data.capabilities.slice(0, 5).map((capability) => (
-                <div key={capability.id} className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 rounded-full ${
-                    capability.ragStatus === 'Red' ? 'bg-red-500' :
-                    capability.ragStatus === 'Amber' ? 'bg-amber-500' : 'bg-green-500'
-                  }`}></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {capability.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {capability.status}
-                    </p>
+      {/* Project Timeline */}
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">Project Timeline</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 pt-0">
+          {sortedMilestones.length > 0 ? (
+            <div className="space-y-3 sm:space-y-4">
+              {sortedMilestones.map((milestone) => {
+                const milestoneStatus = getMilestoneStatus(new Date(milestone.targetDate));
+                const StatusIcon = milestoneStatus.icon;
+                
+                return (
+                  <div key={milestone.id} className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div className={`p-2 rounded-full ${milestoneStatus.bgColor} flex-shrink-0`}>
+                      <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${milestoneStatus.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+                            {milestone.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+                            {milestone.description}
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:items-end gap-1">
+                          <span className="text-xs sm:text-sm font-medium text-gray-900">
+                            {format(new Date(milestone.targetDate), "MMM dd, yyyy")}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            milestoneStatus.status === 'on-track' 
+                              ? 'bg-green-100 text-green-800' 
+                              : milestoneStatus.status === 'warning'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {milestoneStatus.status === 'on-track' ? 'On Track' : 
+                             milestoneStatus.status === 'warning' ? 'Due Soon' : 'Overdue'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {data.capabilities.length === 0 && (
-                <p className="text-sm text-gray-500">No capabilities yet</p>
-              )}
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-gray-500">
+                <Calendar className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-base sm:text-lg font-medium mb-2">No milestones yet</h3>
+                <p className="text-xs sm:text-sm">
+                  Create milestones to track your project progress
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
