@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,82 @@ export default function RoadmapView() {
     
     console.log('Found milestone for capability', capabilityId, ':', milestone);
     return milestone;
+  };
+
+  // Filter capabilities based on search and selection - MOVED UP BEFORE OTHER FUNCTIONS
+  const filteredCapabilities = data.capabilities.filter(capability => {
+    const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
+    const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
+    return matchesSearch && matchesSelection;
+  });
+
+  // Get all plans to determine the full scrollable date range
+  const getAllPlanDates = () => {
+    const dates: Date[] = [];
+    filteredCapabilities.forEach((cap) => {
+      const activePlan = getActiveRoadmapPlan(cap.id);
+      if (activePlan) {
+        // Add all plan dates
+        const planDates = [
+          activePlan.requirementStartDate,
+          activePlan.requirementEndDate,
+          activePlan.designStartDate,
+          activePlan.designEndDate,
+          activePlan.devStartDate,
+          activePlan.devEndDate,
+          activePlan.cstStartDate,
+          activePlan.cstEndDate,
+          activePlan.uatStartDate,
+          activePlan.uatEndDate,
+        ].filter(date => date instanceof Date);
+        dates.push(...planDates);
+      }
+      
+      // Also include historical plan dates if history is shown
+      if (showHistory[cap.id]) {
+        const history = getRoadmapHistory(cap.id);
+        history.slice(1).forEach((historicalPlan) => {
+          const historicalDates = [
+            historicalPlan.requirementStartDate,
+            historicalPlan.requirementEndDate,
+            historicalPlan.designStartDate,
+            historicalPlan.designEndDate,
+            historicalPlan.devStartDate,
+            historicalPlan.devEndDate,
+            historicalPlan.cstStartDate,
+            historicalPlan.cstEndDate,
+            historicalPlan.uatStartDate,
+            historicalPlan.uatEndDate,
+          ].filter(date => date instanceof Date);
+          dates.push(...historicalDates);
+        });
+      }
+    });
+    return dates;
+  };
+
+  // Calculate the full scrollable timeline bounds (for scroll area)
+  const calculateFullTimelineBounds = () => {
+    const allPlanDates = getAllPlanDates();
+    
+    // Always include the default view range
+    let timelineStart = startOfMonth(subMonths(now, 1));
+    let timelineEnd = endOfMonth(addMonths(now, 11));
+    
+    if (allPlanDates.length > 0) {
+      const earliestPlanDate = dateMin(allPlanDates);
+      const latestPlanDate = dateMax(allPlanDates);
+      
+      // Extend timeline to include all plan dates with some padding
+      const earliestMonth = startOfMonth(subMonths(earliestPlanDate, 1));
+      const latestMonth = endOfMonth(addMonths(latestPlanDate, 1));
+      
+      // Only extend beyond default range if plans exist outside it
+      timelineStart = dateMin([timelineStart, earliestMonth]);
+      timelineEnd = dateMax([timelineEnd, latestMonth]);
+    }
+    
+    return { timelineStart, timelineEnd };
   };
 
   // Export to PDF function with improved error handling
@@ -252,75 +329,6 @@ export default function RoadmapView() {
 
   const { monthWidth: currentMonthWidth, rowHeight: currentRowHeight } = getCurrentDimensions();
 
-  // Get all plans to determine the full scrollable date range
-  const getAllPlanDates = () => {
-    const dates: Date[] = [];
-    filteredCapabilities.forEach((cap) => {
-      const activePlan = getActiveRoadmapPlan(cap.id);
-      if (activePlan) {
-        // Add all plan dates
-        const planDates = [
-          activePlan.requirementStartDate,
-          activePlan.requirementEndDate,
-          activePlan.designStartDate,
-          activePlan.designEndDate,
-          activePlan.devStartDate,
-          activePlan.devEndDate,
-          activePlan.cstStartDate,
-          activePlan.cstEndDate,
-          activePlan.uatStartDate,
-          activePlan.uatEndDate,
-        ].filter(date => date instanceof Date);
-        dates.push(...planDates);
-      }
-      
-      // Also include historical plan dates if history is shown
-      if (showHistory[cap.id]) {
-        const history = getRoadmapHistory(cap.id);
-        history.slice(1).forEach((historicalPlan) => {
-          const historicalDates = [
-            historicalPlan.requirementStartDate,
-            historicalPlan.requirementEndDate,
-            historicalPlan.designStartDate,
-            historicalPlan.designEndDate,
-            historicalPlan.devStartDate,
-            historicalPlan.devEndDate,
-            historicalPlan.cstStartDate,
-            historicalPlan.cstEndDate,
-            historicalPlan.uatStartDate,
-            historicalPlan.uatEndDate,
-          ].filter(date => date instanceof Date);
-          dates.push(...historicalDates);
-        });
-      }
-    });
-    return dates;
-  };
-
-  // Calculate the full scrollable timeline bounds (for scroll area)
-  const calculateFullTimelineBounds = () => {
-    const allPlanDates = getAllPlanDates();
-    
-    // Always include the default view range
-    let timelineStart = startOfMonth(subMonths(now, 1));
-    let timelineEnd = endOfMonth(addMonths(now, 11));
-    
-    if (allPlanDates.length > 0) {
-      const earliestPlanDate = dateMin(allPlanDates);
-      const latestPlanDate = dateMax(allPlanDates);
-      
-      // Extend timeline to include all plan dates with some padding
-      const earliestMonth = startOfMonth(subMonths(earliestPlanDate, 1));
-      const latestMonth = endOfMonth(addMonths(latestPlanDate, 1));
-      
-      // Only extend beyond default range if plans exist outside it
-      timelineStart = dateMin([timelineStart, earliestMonth]);
-      timelineEnd = dateMax([timelineEnd, latestMonth]);
-    }
-    
-    return { timelineStart, timelineEnd };
-  };
-
   // Default visible timeline (current month + 1 before + 11 after)
   const defaultVisibleStart = startOfMonth(subMonths(now, 1));
   const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
@@ -343,13 +351,6 @@ export default function RoadmapView() {
       [capabilityId]: !prev[capabilityId]
     }));
   };
-
-  // Filter capabilities based on search and selection
-  const filteredCapabilities = data.capabilities.filter(capability => {
-    const matchesSearch = capability.name.toLowerCase().includes(capabilityFilter.toLowerCase());
-    const matchesSelection = selectedCapability === "all" || capability.id === selectedCapability;
-    return matchesSearch && matchesSelection;
-  });
 
   // Get plans with capability data (only active plans unless history is toggled)
   const plansWithCapability: Array<{ capability: any; plan: any; isActive: boolean }> = [];
