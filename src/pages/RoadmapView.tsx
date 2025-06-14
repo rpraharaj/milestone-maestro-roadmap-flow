@@ -64,19 +64,19 @@ export default function RoadmapView() {
   const getMilestoneForCapability = (capabilityId: string) => {
     console.log('Looking for milestone for capability:', capabilityId);
     console.log('Available milestones:', data.milestones);
-    console.log('Available capabilities with milestones:', data.capabilities.map(c => ({ id: c.id, name: c.name, milestoneId: c.milestoneId })));
+    console.log('Available capabilities with milestones:', data.capabilities.map(c => ({ id: c.id, name: c.name, milestone: c.milestone })));
     
-    // First, find the capability to get its milestoneId
+    // First, find the capability to get its milestone
     const capability = data.capabilities.find(cap => cap.id === capabilityId);
     console.log('Found capability:', capability);
     
-    if (!capability || !capability.milestoneId) {
-      console.log('No milestone ID found for capability:', capabilityId);
+    if (!capability || !capability.milestone) {
+      console.log('No milestone found for capability:', capabilityId);
       return null;
     }
     
     // Then find the milestone by ID
-    const milestone = data.milestones.find(milestone => milestone.id === capability.milestoneId);
+    const milestone = data.milestones.find(milestone => milestone.id === capability.milestone);
     console.log('Found milestone for capability', capabilityId, ':', milestone);
     
     return milestone;
