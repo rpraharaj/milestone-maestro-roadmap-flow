@@ -1,23 +1,24 @@
+
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { History, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import TimelineHeader from "@/components/roadmap/TimelineHeader";
 import TimelineRow from "@/components/roadmap/TimelineRow";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 
+const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // Sum of px widths for the fixed columns
+
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
-  // --- 1. Compute default timeline window (1 month before, 11 months after now) ---
+  // Timeline range: 1 month before, 11 months after today
   const now = new Date();
   const timelineDefaultStart = startOfMonth(subMonths(now, 1));
   const timelineDefaultEnd = endOfMonth(addMonths(now, 11));
 
-  // Helper to safely parse dates from plan fields
   function parsePlanDate(val: unknown, fallback: Date = new Date()): Date {
     if (
       (typeof val === "string" && val) ||
@@ -29,7 +30,7 @@ export default function RoadmapView() {
     return fallback;
   }
 
-  // Get all roadmap plans (active and historical)
+  // All plans for active and historical view
   const allPlans = useMemo(() => {
     const plans: Array<{ capability: any; plan: any; isActive: boolean }> = [];
     data.capabilities.forEach(capability => {
@@ -47,30 +48,25 @@ export default function RoadmapView() {
     return plans;
   }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
 
-  // --- Timeline always uses default window, ignore project data min/max
+  // Timeline window/month columns
   const visibleTimelineStart = timelineDefaultStart;
   const visibleTimelineEnd = timelineDefaultEnd;
   const actualContentStart = timelineDefaultStart;
   const actualContentEnd = timelineDefaultEnd;
 
-  // Months for header and content are always the same (window)
   const headerMonths = eachMonthOfInterval({ start: visibleTimelineStart, end: visibleTimelineEnd });
   const contentMonths = headerMonths;
 
-  // We calculate width: each month will be fixed px (e.g. 120px), so content W = Nmonths * px/unit
   const MONTH_WIDTH = 120;
   const TIMELINE_MIN_HEIGHT = 140;
   const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
-  const timelineViewportWidth = headerMonths.length * MONTH_WIDTH;
+  const timelineViewportWidth = contentMonths.length * MONTH_WIDTH; // always the same now
 
-  // For aligning bars: offset every plan/phase bars based on their date relative to actualContentStart,
-  // but CLAMP all bars to actualContentStart and actualContentEnd
+  // Position for each bar
   const getPhasePosition = (startDate: Date, endDate: Date) => {
-    // Clamp phase start and end to visible window
     const clampedStart = dateMax([startDate, actualContentStart]);
     const clampedEnd = dateMin([endDate, actualContentEnd]);
     if (clampedEnd < clampedStart) {
-      // phase does not appear in window
       return { left: "0%", width: "0%" };
     }
     const startOffset = differenceInDays(clampedStart, actualContentStart);
@@ -84,18 +80,18 @@ export default function RoadmapView() {
     };
   };
 
-  // --- 4. Use ref+effect: scroll to today in view on mount/first render (so default is today centered/at start) ---
+  // Scroll to today on mount for timeline
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!scrollAreaRef.current) return;
-    const currentMonthIndex = contentMonths.findIndex(m => 
+    const currentMonthIndex = contentMonths.findIndex(m =>
       m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth()
     );
     const scrollToPx = Math.max(0, (currentMonthIndex - 3) * MONTH_WIDTH);
     scrollAreaRef.current.scrollLeft = scrollToPx;
   }, [now, contentMonths.length]);
 
-  // Renamed phases as per your requirement
+  // Phases for the timeline bars
   const phases = [
     { key: 'requirement', label: 'REQ', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
     { key: 'design', label: 'DES', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
@@ -104,70 +100,169 @@ export default function RoadmapView() {
     { key: 'uat', label: 'UAT', color: 'bg-red-500', startField: 'uatStartDate', endField: 'uatEndDate' },
   ];
 
+  // Table column widths (px)
+  const columns = [
+    { label: 'Capability', width: 192 },  // w-48
+    { label: 'RAG', width: 48 },          // w-12
+    { label: 'Status', width: 112 },      // w-28
+    { label: '', width: 64 },             // w-16 (history icon)
+  ];
+
   return (
     <div className="space-y-6 flex flex-col">
-      {/* Timeline FIRST, legend later */}
       {allPlans.length > 0 ? (
         <Card className="overflow-hidden order-1">
           <CardHeader>
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Horizontal scroll area for timeline */}
-            <div
-              className="w-full"
-              style={{
-                overflowX: "auto",
-                minHeight: TIMELINE_MIN_HEIGHT,
-              }}
-              ref={scrollAreaRef}
-            >
-              {/* This container grows if there are extra months (plans outside of window) */}
-              <div
-                className="relative"
-                style={{
-                  minWidth: `${timelineViewportWidth}px`,
-                  width: `${timelineContentWidth}px`,
-                  maxWidth: "none",
-                }}
-              >
-                {/* Timeline Header */}
-                <TimelineHeader
-                  months={contentMonths}
-                  monthWidth={MONTH_WIDTH}
-                  contentWidth={timelineContentWidth}
-                />
-                {/* Timeline Content */}
-                <div className="divide-y divide-gray-200">
-                  {data.capabilities.map(capability => {
-                    const activePlan = getActiveRoadmapPlan(capability.id);
-                    const history = getRoadmapHistory(capability.id);
-                    const hasHistory = history.length > 1;
-                    const plansToShow = [
-                      ...(activePlan ? [{ plan: activePlan, isActive: true }] : []),
-                      ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
-                    ];
-                    if (plansToShow.length === 0) return null;
-                    return (
-                      <TimelineRow
-                        key={capability.id}
-                        capability={capability}
-                        plansToShow={plansToShow}
-                        showHistory={!!showHistory[capability.id]}
-                        hasHistory={hasHistory}
-                        onToggleHistory={() =>
-                          setShowHistory(prev => ({
-                            ...prev,
-                            [capability.id]: !prev[capability.id]
-                          }))
-                        }
-                        getPhasePosition={getPhasePosition}
-                        parsePlanDate={parsePlanDate}
-                        phases={phases}
-                      />
-                    );
-                  })}
+
+            {/* Header: fixed columns + scrollable months */}
+            <div className="flex border-b bg-gray-50 sticky top-0 z-10">
+              {/* Fixed left columns header */}
+              {columns.map(col => (
+                <div
+                  key={col.label}
+                  className="text-sm font-medium text-gray-600 flex items-center border-r border-gray-200 px-3"
+                  style={{ minWidth: col.width, maxWidth: col.width, width: col.width }}
+                >
+                  {col.label}
                 </div>
+              ))}
+              {/* Timeline header months */}
+              <div className="flex-1 min-w-0 overflow-x-auto" style={{}}>
+                <div
+                  className="flex"
+                  style={{ minWidth: `${timelineContentWidth}px`, width: `${timelineContentWidth}px` }}
+                >
+                  {contentMonths.map(month => (
+                    <div
+                      key={month.toISOString()}
+                      className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
+                      style={{
+                        minWidth: `${MONTH_WIDTH}px`,
+                        width: `${MONTH_WIDTH}px`,
+                      }}
+                    >
+                      {format(month, "MMM yyyy")}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Timeline content (body): */}
+            <div className="divide-y divide-gray-200">
+              {/* Wrap in scroll container for TIMELINE only */}
+              <div style={{ width: "100%", overflowX: "auto", minHeight: TIMELINE_MIN_HEIGHT }} ref={scrollAreaRef}>
+                {data.capabilities.map(capability => {
+                  const activePlan = getActiveRoadmapPlan(capability.id);
+                  const history = getRoadmapHistory(capability.id);
+                  const hasHistory = history.length > 1;
+                  const plansToShow = [
+                    ...(activePlan ? [{ plan: activePlan, isActive: true }] : []),
+                    ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
+                  ];
+                  if (plansToShow.length === 0) return null;
+                  return (
+                    <div className="flex" key={capability.id}>
+                      {/* Fixed left columns (row) */}
+                      {plansToShow.map(({ plan, isActive }, planIndex) => (
+                        <div
+                          key={plan.id}
+                          className="flex"
+                          style={{
+                            minWidth:
+                              columns.reduce((sum, c) => sum + c.width, 0),
+                            maxWidth:
+                              columns.reduce((sum, c) => sum + c.width, 0),
+                            width: columns.reduce((sum, c) => sum + c.width, 0),
+                          }}
+                        >
+                          {/* Name column */}
+                          <div className="w-48 flex items-center px-3 h-12 border-b border-gray-100">
+                            <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
+                              {capability.name}
+                            </span>
+                            {!isActive && (
+                              <span className="ml-2 text-xs text-gray-400 align-middle">v{plan.version}</span>
+                            )}
+                          </div>
+                          {/* RAG column */}
+                          <div className="w-12 flex items-center justify-center h-12 border-b border-gray-100">
+                            {/* ragDot from TimelineRow */}
+                            {(() => {
+                              let color = "bg-green-500";
+                              if (capability.ragStatus === "Red") color = "bg-red-500";
+                              else if (capability.ragStatus === "Amber") color = "bg-amber-400";
+                              return (
+                                <span className={`inline-block h-3 w-3 rounded-full ${color}`} title={capability.ragStatus} />
+                              );
+                            })()}
+                          </div>
+                          {/* Status column */}
+                          <div className="w-28 flex items-center h-12 text-xs text-gray-600 border-b border-gray-100">
+                            {capability.status}
+                          </div>
+                          {/* History icon column */}
+                          <div className="w-16 flex items-center justify-center h-12 border-b border-gray-100">
+                            {planIndex === 0 && hasHistory && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  setShowHistory(prev => ({
+                                    ...prev,
+                                    [capability.id]: !prev[capability.id]
+                                  }))
+                                }
+                                className="h-8 w-8 p-0"
+                                title={showHistory[capability.id] ? "Hide History" : "Show History"}
+                              >
+                                <History className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Scrollable timeline cells (phases bar) */}
+                      <div
+                        className="flex-1 relative"
+                        style={{
+                          minWidth: `${timelineContentWidth}px`,
+                          width: `${timelineContentWidth}px`,
+                          maxWidth: `${timelineContentWidth}px`,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {/* Timeline bars for each plan */}
+                        {plansToShow.map(({ plan, isActive }) => (
+                          <div className="relative w-full h-12 flex items-center" key={plan.id}>
+                            {phases.map(phase => {
+                              const startDate = parsePlanDate(plan[phase.startField]);
+                              const endDate = parsePlanDate(plan[phase.endField]);
+                              const position = getPhasePosition(startDate, endDate);
+                              return (
+                                <div
+                                  key={phase.key}
+                                  className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                                  style={{
+                                    left: position.left,
+                                    width: position.width,
+                                    top: 0,
+                                  }}
+                                  title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
+                                >
+                                  <div className="text-xs text-white font-medium p-1 truncate">{phase.label}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </CardContent>
@@ -185,8 +280,7 @@ export default function RoadmapView() {
           </CardContent>
         </Card>
       )}
-
-      {/* Legend moved to BOTTOM, order-2 */}
+      {/* Legend BELOW timeline */}
       <Card className="order-2">
         <CardHeader>
           <CardTitle className="text-lg">Phase Legend</CardTitle>
