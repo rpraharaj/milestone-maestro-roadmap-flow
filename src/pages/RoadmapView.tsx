@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, History } from "lucide-react";
+import { MapPin, History, Maximize, Minimize } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
@@ -13,6 +13,10 @@ const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
 const ROW_HEIGHT = 48;
 
+// Full view constants - smaller sizes to fit more content
+const FULL_VIEW_MONTH_WIDTH = 60;
+const FULL_VIEW_ROW_HEIGHT = 32;
+
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
@@ -21,6 +25,7 @@ export default function RoadmapView() {
     status: true,
     history: true,
   });
+  const [isFullView, setIsFullView] = useState(false);
   const now = new Date();
 
   const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
@@ -28,6 +33,10 @@ export default function RoadmapView() {
       ...prev,
       [column]: !prev[column]
     }));
+  };
+
+  const toggleFullView = () => {
+    setIsFullView(prev => !prev);
   };
 
   // Export to PDF function with improved error handling
@@ -164,19 +173,20 @@ export default function RoadmapView() {
     }
   };
 
-  // Calculate dynamic column widths based on visibility
+  // Calculate dynamic column widths based on visibility and view mode
   const getColumns = () => {
-    const baseColumns = [{ label: 'Capability', width: 192 }];
+    const scaleFactor = isFullView ? 0.7 : 1; // Reduce size in full view
+    const baseColumns = [{ label: 'Capability', width: Math.round(192 * scaleFactor) }];
     const conditionalColumns = [];
     
     if (visibleColumns.rag) {
-      conditionalColumns.push({ label: 'RAG', width: 48 });
+      conditionalColumns.push({ label: 'RAG', width: Math.round(48 * scaleFactor) });
     }
     if (visibleColumns.status) {
-      conditionalColumns.push({ label: 'Status', width: 112 });
+      conditionalColumns.push({ label: 'Status', width: Math.round(112 * scaleFactor) });
     }
     if (visibleColumns.history) {
-      conditionalColumns.push({ label: 'History', width: 64 });
+      conditionalColumns.push({ label: 'History', width: Math.round(64 * scaleFactor) });
     }
     
     return [...baseColumns, ...conditionalColumns];
@@ -184,6 +194,10 @@ export default function RoadmapView() {
 
   const columns = getColumns();
   const dynamicLeftWidth = columns.reduce((sum, col) => sum + col.width, 0);
+
+  // Use different dimensions based on view mode
+  const currentMonthWidth = isFullView ? FULL_VIEW_MONTH_WIDTH : MONTH_WIDTH;
+  const currentRowHeight = isFullView ? FULL_VIEW_ROW_HEIGHT : ROW_HEIGHT;
 
   // Get all plans to determine the full scrollable date range
   const getAllPlanDates = () => {
@@ -263,7 +277,7 @@ export default function RoadmapView() {
   
   // Use full timeline for the scrollable area
   const headerMonths = eachMonthOfInterval({ start: fullTimelineStart, end: fullTimelineEnd });
-  const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
+  const timelineContentWidth = headerMonths.length * currentMonthWidth;
 
   // Calculate initial scroll position to show default view
   const defaultViewMonths = eachMonthOfInterval({ start: defaultVisibleStart, end: defaultVisibleEnd });
@@ -333,12 +347,21 @@ export default function RoadmapView() {
   return (
     <div className="space-y-6 flex flex-col">
       {plansWithCapability.length > 0 ? (
-        <Card className="overflow-hidden order-1">
+        <Card className={`overflow-hidden order-1 ${isFullView ? 'fixed inset-4 z-50 bg-white' : ''}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Project Timeline</CardTitle>
+              <CardTitle className={`${isFullView ? 'text-base' : 'text-lg'}`}>Project Timeline</CardTitle>
               <div className="flex items-center gap-2">
-                <PDFExport onExportPDF={handleExportPDF} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleFullView}
+                  className="flex items-center gap-2"
+                >
+                  {isFullView ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  {isFullView ? 'Exit Full View' : 'Full View'}
+                </Button>
+                {!isFullView && <PDFExport onExportPDF={handleExportPDF} />}
                 <ColumnVisibilitySettings
                   visibleColumns={visibleColumns}
                   onColumnToggle={handleColumnToggle}
@@ -354,12 +377,12 @@ export default function RoadmapView() {
                 style={{ width: dynamicLeftWidth }}
               >
                 {/* Header Row */}
-                <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
+                <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: currentRowHeight }}>
                   {columns.map((col) => (
                     <div
                       key={col.label}
-                      className="flex items-center justify-center text-sm font-medium text-gray-600 border-r border-gray-200 last:border-r-0"
-                      style={{ width: col.width, height: ROW_HEIGHT }}
+                      className={`flex items-center justify-center ${isFullView ? 'text-xs' : 'text-sm'} font-medium text-gray-600 border-r border-gray-200 last:border-r-0`}
+                      style={{ width: col.width, height: currentRowHeight }}
                     >
                       {col.label}
                     </div>
@@ -378,14 +401,14 @@ export default function RoadmapView() {
                   return plansToShow.map((plan, planIndex) => {
                     const isActive = planIndex === 0;
                     return (
-                      <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: ROW_HEIGHT }}>
+                      <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: currentRowHeight }}>
                         {/* Capability Name with Version */}
-                        <div className="flex items-center px-3 border-r border-gray-200" style={{ width: columns.find(c => c.label === 'Capability')?.width || 192 }}>
-                          <span className="font-medium truncate" title={capability.name}>
+                        <div className="flex items-center px-2 border-r border-gray-200" style={{ width: columns.find(c => c.label === 'Capability')?.width || 192 }}>
+                          <span className={`font-medium truncate ${isFullView ? 'text-xs' : 'text-sm'}`} title={capability.name}>
                             {capability.name}
                           </span>
                           {plan && (
-                            <span className="ml-2 text-xs text-gray-500 font-normal">
+                            <span className={`ml-1 ${isFullView ? 'text-[10px]' : 'text-xs'} text-gray-500 font-normal`}>
                               v{plan.version}
                             </span>
                           )}
@@ -393,9 +416,9 @@ export default function RoadmapView() {
                         
                         {/* RAG Status */}
                         {visibleColumns.rag && (
-                          <div className="flex items-center justify-center border-r border-gray-200" style={{ width: 48 }}>
+                          <div className="flex items-center justify-center border-r border-gray-200" style={{ width: columns.find(c => c.label === 'RAG')?.width || 48 }}>
                             <span
-                              className={`inline-block h-3 w-3 rounded-full ${
+                              className={`inline-block ${isFullView ? 'h-2 w-2' : 'h-3 w-3'} rounded-full ${
                                 capability.ragStatus === "Red"
                                   ? "bg-red-500"
                                   : capability.ragStatus === "Amber"
@@ -409,23 +432,23 @@ export default function RoadmapView() {
                         
                         {/* Status */}
                         {visibleColumns.status && (
-                          <div className="flex items-center px-3 text-xs text-gray-600 border-r border-gray-200" style={{ width: 112 }}>
+                          <div className={`flex items-center px-2 ${isFullView ? 'text-[10px]' : 'text-xs'} text-gray-600 border-r border-gray-200`} style={{ width: columns.find(c => c.label === 'Status')?.width || 112 }}>
                             {capability.status}
                           </div>
                         )}
                         
                         {/* History Toggle */}
                         {visibleColumns.history && (
-                          <div className="flex items-center justify-center" style={{ width: 64 }}>
-                            {isActive && hasHistory && (
+                          <div className="flex items-center justify-center" style={{ width: columns.find(c => c.label === 'History')?.width || 64 }}>
+                            {isActive && hasHistory && !isFullView && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => toggleHistory(capability.id)}
-                                className="h-8 w-8 p-0"
+                                className="h-6 w-6 p-0"
                                 title={showHistory[capability.id] ? "Hide History" : "Show History"}
                               >
-                                <History className="h-4 w-4" />
+                                <History className="h-3 w-3" />
                               </Button>
                             )}
                           </div>
@@ -438,12 +461,12 @@ export default function RoadmapView() {
 
               {/* Visual Timeline */}
               <div 
-                className="flex-1 overflow-x-auto"
+                className={`flex-1 ${isFullView ? 'overflow-hidden' : 'overflow-x-auto'}`}
                 style={{ 
                   scrollBehavior: 'smooth',
                 }}
                 ref={(ref) => {
-                  if (ref && initialScrollLeft > 0) {
+                  if (ref && !isFullView && initialScrollLeft > 0) {
                     // Set initial scroll position to show default view
                     setTimeout(() => {
                       ref.scrollLeft = initialScrollLeft;
@@ -451,16 +474,20 @@ export default function RoadmapView() {
                   }
                 }}
               >
-                <div style={{ minWidth: timelineContentWidth }}>
+                <div style={{ minWidth: isFullView ? '100%' : timelineContentWidth, width: isFullView ? '100%' : timelineContentWidth }}>
                   {/* Timeline Header */}
-                  <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
+                  <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: currentRowHeight }}>
                     {headerMonths.map((month) => (
                       <div
                         key={month.toISOString()}
-                        className="flex items-center justify-center text-sm font-medium text-gray-600 border-l border-gray-200 first:border-l-0"
-                        style={{ width: MONTH_WIDTH, height: ROW_HEIGHT }}
+                        className={`flex items-center justify-center ${isFullView ? 'text-[10px]' : 'text-sm'} font-medium text-gray-600 border-l border-gray-200 first:border-l-0`}
+                        style={{ 
+                          width: isFullView ? `${100 / headerMonths.length}%` : currentMonthWidth, 
+                          height: currentRowHeight,
+                          minWidth: isFullView ? 'auto' : currentMonthWidth
+                        }}
                       >
-                        {format(month, "MMM yyyy")}
+                        {format(month, isFullView ? "MMM yy" : "MMM yyyy")}
                       </div>
                     ))}
                   </div>
@@ -470,9 +497,9 @@ export default function RoadmapView() {
                     <div
                       key={`${capability.id}-${plan.id}`}
                       className="relative border-b border-gray-100"
-                      style={{ height: ROW_HEIGHT, minWidth: timelineContentWidth }}
+                      style={{ height: currentRowHeight, minWidth: isFullView ? '100%' : timelineContentWidth }}
                     >
-                      <div className="relative w-full h-full flex items-center px-2">
+                      <div className="relative w-full h-full flex items-center px-1">
                         {phases.map((phase) => {
                           const startDate = parsePlanDate(plan[phase.startField]);
                           const endDate = parsePlanDate(plan[phase.endField]);
@@ -483,7 +510,7 @@ export default function RoadmapView() {
                           return (
                             <div
                               key={phase.key}
-                              className={`absolute h-6 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                              className={`absolute ${isFullView ? 'h-4' : 'h-6'} rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
                               style={{
                                 left: position.left,
                                 width: position.width,
@@ -492,7 +519,7 @@ export default function RoadmapView() {
                               }}
                               title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                             >
-                              <div className="text-xs text-white font-medium px-2 truncate">
+                              <div className={`${isFullView ? 'text-[9px]' : 'text-xs'} text-white font-medium px-1 truncate`}>
                                 {phase.label}
                               </div>
                             </div>
@@ -520,15 +547,17 @@ export default function RoadmapView() {
         </Card>
       )}
       
-      {/* Legend */}
-      <Card className="order-2">
-        <CardHeader>
-          <CardTitle className="text-lg">Phase Legend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PhaseLegend phases={phases} />
-        </CardContent>
-      </Card>
+      {/* Legend - hidden in full view */}
+      {!isFullView && (
+        <Card className="order-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Phase Legend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PhaseLegend phases={phases} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
