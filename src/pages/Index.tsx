@@ -1,12 +1,14 @@
+
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Target, Calendar, Map, BarChart3 } from "lucide-react";
-import { format, eachMonthOfInterval, differenceInDays } from "date-fns";
+import { format, eachMonthOfInterval, differenceInDays, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { data, getActiveRoadmapPlan } = useData();
+  const isMobile = useIsMobile();
 
   const stats = [
     {
@@ -106,6 +108,10 @@ const Index = () => {
     },
   ];
 
+  // Timeline constants - updated to match roadmap view
+  const MONTH_WIDTH = isMobile ? 80 : 120; // Match roadmap view
+  const ROW_HEIGHT = 48; // Match roadmap view (h-12)
+
   // Get capabilities with active plans
   const capabilitiesWithPlans = data.capabilities.map(capability => {
     const activePlan = getActiveRoadmapPlan(capability.id);
@@ -135,13 +141,30 @@ const Index = () => {
   };
 
   const timelineBounds = getTimelineBounds();
-  const MONTH_WIDTH = 100;
+  
+  // Calculate default visible timeline (current month + 1 before + 11 after)
+  const now = new Date();
+  const defaultVisibleStart = startOfMonth(subMonths(now, 1));
+  const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
+  
+  // Extend timeline if plans exist outside default range
+  let timelineStart = defaultVisibleStart;
+  let timelineEnd = defaultVisibleEnd;
+  
+  if (timelineBounds) {
+    if (timelineBounds.minDate < defaultVisibleStart) {
+      timelineStart = startOfMonth(subMonths(timelineBounds.minDate, 1));
+    }
+    if (timelineBounds.maxDate > defaultVisibleEnd) {
+      timelineEnd = endOfMonth(addMonths(timelineBounds.maxDate, 1));
+    }
+  }
   
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     if (!timelineBounds) return { left: '0%', width: '0%' };
     
-    const totalDays = differenceInDays(timelineBounds.maxDate, timelineBounds.minDate);
-    const startOffset = differenceInDays(startDate, timelineBounds.minDate);
+    const totalDays = differenceInDays(timelineEnd, timelineStart);
+    const startOffset = differenceInDays(startDate, timelineStart);
     const duration = differenceInDays(endDate, startDate) + 1;
     
     const left = (startOffset / totalDays) * 100;
@@ -153,12 +176,17 @@ const Index = () => {
     };
   };
 
-  const months = timelineBounds ? eachMonthOfInterval({
-    start: timelineBounds.minDate,
-    end: timelineBounds.maxDate
-  }) : [];
+  const months = eachMonthOfInterval({
+    start: timelineStart,
+    end: timelineEnd
+  });
 
   const timelineContentWidth = months.length * MONTH_WIDTH;
+
+  // Calculate initial scroll position to show default view
+  const defaultViewMonths = eachMonthOfInterval({ start: defaultVisibleStart, end: defaultVisibleEnd });
+  const monthsBeforeDefault = eachMonthOfInterval({ start: timelineStart, end: subMonths(defaultVisibleStart, 1) });
+  const initialScrollLeft = monthsBeforeDefault.length * MONTH_WIDTH;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -204,13 +232,20 @@ const Index = () => {
               <div className="flex">
                 {/* Fixed capability info column */}
                 <div className="w-56 flex-shrink-0 bg-gray-50 border-r border-gray-200">
-                  <div className="h-9 flex items-center px-4 border-b border-gray-200 bg-gray-100">
+                  <div 
+                    className="flex items-center px-4 border-b border-gray-200 bg-gray-100"
+                    style={{ height: ROW_HEIGHT }}
+                  >
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                       Capability
                     </span>
                   </div>
                   {capabilitiesWithPlans.map(({ capability }) => (
-                    <div key={capability.id} className="h-10 flex items-center px-4 border-b border-gray-100 last:border-b-0">
+                    <div 
+                      key={capability.id} 
+                      className="flex items-center px-4 border-b border-gray-100 last:border-b-0"
+                      style={{ height: ROW_HEIGHT }}
+                    >
                       <span className="font-medium text-gray-900 truncate text-sm" title={capability.name}>
                         {capability.name}
                       </span>
@@ -218,27 +253,47 @@ const Index = () => {
                   ))}
                 </div>
 
-                {/* Scrollable timeline area */}
+                {/* Scrollable timeline area - updated to match roadmap view */}
                 <div className="flex-1 min-w-0 bg-white">
-                  <ScrollArea className="w-full">
+                  <div 
+                    className="overflow-x-auto"
+                    style={{ 
+                      scrollBehavior: 'smooth',
+                    }}
+                    ref={(ref) => {
+                      if (ref && initialScrollLeft > 0) {
+                        // Set initial scroll position to show default view
+                        setTimeout(() => {
+                          ref.scrollLeft = initialScrollLeft;
+                        }, 100);
+                      }
+                    }}
+                  >
                     <div style={{ width: `${timelineContentWidth}px` }}>
                       {/* Timeline header with months */}
-                      <div className="h-9 flex border-b border-gray-200 bg-gray-50">
+                      <div 
+                        className="flex border-b border-gray-200 bg-gray-50"
+                        style={{ height: ROW_HEIGHT }}
+                      >
                         {months.map((month) => (
                           <div
                             key={month.toISOString()}
                             className="text-center text-xs font-medium text-gray-600 border-l border-gray-200 first:border-l-0 flex items-center justify-center"
                             style={{ minWidth: `${MONTH_WIDTH}px`, width: `${MONTH_WIDTH}px` }}
                           >
-                            {format(month, "MMM yy")}
+                            {format(month, isMobile ? "MMM yy" : "MMM yyyy")}
                           </div>
                         ))}
                       </div>
 
                       {/* Timeline bars for each capability */}
                       {capabilitiesWithPlans.map(({ capability, plan }) => (
-                        <div key={capability.id} className="h-10 border-b border-gray-100 last:border-b-0 flex items-center px-2">
-                          <div className="relative w-full h-5">
+                        <div 
+                          key={capability.id} 
+                          className="border-b border-gray-100 last:border-b-0 flex items-center px-2"
+                          style={{ height: ROW_HEIGHT }}
+                        >
+                          <div className="relative w-full h-6">
                             {phases.map((phase) => {
                               const startDate = plan![phase.startField] as Date;
                               const endDate = plan![phase.endField] as Date;
@@ -247,7 +302,7 @@ const Index = () => {
                               return (
                                 <div
                                   key={phase.key}
-                                  className={`absolute h-4 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-center`}
+                                  className={`absolute h-5 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-center`}
                                   style={{
                                     left: position.left,
                                     width: position.width,
@@ -255,7 +310,7 @@ const Index = () => {
                                   }}
                                   title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                                 >
-                                  <div className="text-xs text-white font-medium px-1 truncate leading-4 opacity-90 group-hover:opacity-100 text-center">
+                                  <div className="text-xs text-white font-medium px-1 truncate leading-5 opacity-90 group-hover:opacity-100 text-center">
                                     {phase.label}
                                   </div>
                                 </div>
@@ -265,8 +320,7 @@ const Index = () => {
                         </div>
                       ))}
                     </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
+                  </div>
                 </div>
               </div>
             </div>
