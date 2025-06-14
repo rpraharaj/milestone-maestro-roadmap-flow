@@ -108,9 +108,9 @@ const Index = () => {
     },
   ];
 
-  // Timeline constants - updated to match roadmap view
-  const MONTH_WIDTH = isMobile ? 80 : 120; // Match roadmap view
-  const ROW_HEIGHT = 48; // Match roadmap view (h-12)
+  // Timeline constants - mobile optimized
+  const MONTH_WIDTH = isMobile ? 60 : 120; // Reduced from 80 to 60 on mobile for more months visible
+  const ROW_HEIGHT = isMobile ? 40 : 48; // Slightly reduced on mobile for more compact view
 
   // Get capabilities with active plans
   const capabilitiesWithPlans = data.capabilities.map(capability => {
@@ -201,7 +201,8 @@ const Index = () => {
     monthsBeforeDefault: monthsBeforeDefault.length,
     initialScrollLeft,
     MONTH_WIDTH,
-    totalMonths: allMonths.length
+    totalMonths: allMonths.length,
+    isMobile
   });
 
   return (
@@ -246,23 +247,26 @@ const Index = () => {
           ) : (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="flex">
-                {/* Fixed capability info column */}
-                <div className="w-56 flex-shrink-0 bg-gray-50 border-r border-gray-200">
+                {/* Fixed capability info column - Mobile optimized width */}
+                <div className={`${isMobile ? 'w-32' : 'w-56'} flex-shrink-0 bg-gray-50 border-r border-gray-200`}>
                   <div 
-                    className="flex items-center px-4 border-b border-gray-200 bg-gray-100"
+                    className="flex items-center border-b border-gray-200 bg-gray-100"
                     style={{ height: ROW_HEIGHT }}
                   >
-                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    <span className={`text-xs font-semibold text-gray-600 uppercase tracking-wide ${isMobile ? 'px-2' : 'px-4'}`}>
                       Capability
                     </span>
                   </div>
                   {capabilitiesWithPlans.map(({ capability }) => (
                     <div 
                       key={capability.id} 
-                      className="flex items-center px-4 border-b border-gray-100 last:border-b-0"
+                      className={`flex items-center border-b border-gray-100 last:border-b-0 ${isMobile ? 'px-2' : 'px-4'}`}
                       style={{ height: ROW_HEIGHT }}
                     >
-                      <span className="font-medium text-gray-900 truncate text-sm" title={capability.name}>
+                      <span 
+                        className={`font-medium text-gray-900 truncate ${isMobile ? 'text-xs' : 'text-sm'}`} 
+                        title={capability.name}
+                      >
                         {capability.name}
                       </span>
                     </div>
@@ -272,9 +276,10 @@ const Index = () => {
                 {/* Scrollable timeline area */}
                 <div className="flex-1 min-w-0 bg-white">
                   <div 
-                    className="overflow-x-auto"
+                    className={`overflow-x-auto ${isMobile ? 'scrollbar-thin scrollbar-thumb-gray-300' : ''}`}
                     style={{ 
                       scrollBehavior: 'smooth',
+                      scrollSnapType: isMobile ? 'x mandatory' : 'none',
                     }}
                     ref={(ref) => {
                       if (ref && initialScrollLeft > 0) {
@@ -295,10 +300,14 @@ const Index = () => {
                         {allMonths.map((month) => (
                           <div
                             key={month.toISOString()}
-                            className="text-center text-xs font-medium text-gray-600 border-l border-gray-200 first:border-l-0 flex items-center justify-center"
-                            style={{ minWidth: `${MONTH_WIDTH}px`, width: `${MONTH_WIDTH}px` }}
+                            className={`text-center font-medium text-gray-600 border-l border-gray-200 first:border-l-0 flex items-center justify-center ${isMobile ? 'text-xs' : 'text-xs'}`}
+                            style={{ 
+                              minWidth: `${MONTH_WIDTH}px`, 
+                              width: `${MONTH_WIDTH}px`,
+                              scrollSnapAlign: isMobile ? 'start' : 'none'
+                            }}
                           >
-                            {format(month, isMobile ? "MMM yy" : "MMM yyyy")}
+                            {format(month, isMobile ? "MMM" : "MMM yyyy")}
                           </div>
                         ))}
                       </div>
@@ -310,7 +319,7 @@ const Index = () => {
                           className="border-b border-gray-100 last:border-b-0 flex items-center px-2"
                           style={{ height: ROW_HEIGHT }}
                         >
-                          <div className="relative w-full h-6">
+                          <div className={`relative w-full ${isMobile ? 'h-5' : 'h-6'}`}>
                             {phases.map((phase) => {
                               const startDate = plan![phase.startField] as Date;
                               const endDate = plan![phase.endField] as Date;
@@ -319,7 +328,7 @@ const Index = () => {
                               return (
                                 <div
                                   key={phase.key}
-                                  className={`absolute h-5 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-center`}
+                                  className={`absolute ${isMobile ? 'h-4' : 'h-5'} rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-center`}
                                   style={{
                                     left: position.left,
                                     width: position.width,
@@ -327,7 +336,7 @@ const Index = () => {
                                   }}
                                   title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                                 >
-                                  <div className="text-xs text-white font-medium px-1 truncate leading-5 opacity-90 group-hover:opacity-100 text-center">
+                                  <div className={`text-white font-medium px-1 truncate leading-5 opacity-90 group-hover:opacity-100 text-center ${isMobile ? 'text-xs' : 'text-xs'}`}>
                                     {phase.label}
                                   </div>
                                 </div>
@@ -340,6 +349,15 @@ const Index = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Mobile scroll indicator */}
+              {isMobile && (
+                <div className="flex justify-center mt-2 pb-2">
+                  <div className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                    Swipe horizontally to view timeline
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
