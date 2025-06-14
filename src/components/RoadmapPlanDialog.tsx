@@ -123,81 +123,91 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base font-semibold">
             {existingPlan ? "Update" : "Create"} Roadmap Plan
-            {capability && <span className="text-gray-600"> - {capability.name}</span>}
+            {capability && <span className="text-gray-500 text-xs font-medium ml-2">- {capability.name}</span>}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {phases.map((phase) => (
-            <div key={phase.key} className="border rounded-lg p-4">
-              <h3 className="text-lg font-medium mb-4 text-gray-900">{phase.label}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Date</Label>
-                  <Popover 
-                    open={openCalendars[phase.startField]} 
-                    onOpenChange={() => toggleCalendar(phase.startField)}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(formData[phase.startField as keyof typeof formData], "PPP")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData[phase.startField as keyof typeof formData]}
-                        onSelect={(date) => handleDateSelect(phase.startField, date)}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div>
-                  <Label>End Date</Label>
-                  <Popover 
-                    open={openCalendars[phase.endField]} 
-                    onOpenChange={() => toggleCalendar(phase.endField)}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(formData[phase.endField as keyof typeof formData], "PPP")}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData[phase.endField as keyof typeof formData]}
-                        onSelect={(date) => handleDateSelect(phase.endField, date)}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex flex-col gap-2">
+            {phases.map((phase) => (
+              <div
+                key={phase.key}
+                className="border border-gray-200 rounded px-3 py-2 mb-1 bg-gray-50 flex flex-col md:flex-row md:items-center md:gap-2"
+              >
+                <span className="text-xs text-gray-700 w-28 mb-1 md:mb-0 font-semibold shrink-0">
+                  {phase.label}
+                </span>
+                <div className="flex flex-1 flex-col sm:flex-row gap-2">
+                  <div className="flex flex-1 items-center gap-1">
+                    <Label className="text-xs w-[70px] shrink-0 pr-1">Start</Label>
+                    <Popover
+                      open={openCalendars[phase.startField]}
+                      onOpenChange={() => toggleCalendar(phase.startField)}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal"
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3 text-gray-500" />
+                          {format(formData[phase.startField as keyof typeof formData], "MMM dd, yyyy")}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData[phase.startField as keyof typeof formData]}
+                          onSelect={(date) => handleDateSelect(phase.startField, date)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex flex-1 items-center gap-1">
+                    <Label className="text-xs w-[54px] shrink-0 pr-1">End</Label>
+                    <Popover
+                      open={openCalendars[phase.endField]}
+                      onOpenChange={() => toggleCalendar(phase.endField)}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full min-w-[112px] text-xs px-2 py-1 h-8 justify-start font-normal"
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3 text-gray-500" />
+                          {format(formData[phase.endField as keyof typeof formData], "MMM dd, yyyy")}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={formData[phase.endField as keyof typeof formData]}
+                          onSelect={(date) => handleDateSelect(phase.endField, date)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            ))}
+          </div>
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 px-4"
+            >
               {existingPlan ? "Update Plan" : "Create Plan"}
             </Button>
           </div>
