@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
@@ -63,12 +62,10 @@ export default function TimelineRow({
       {plansToShow.map(({ plan, isActive }, planIndex) => (
         <div
           key={plan.id}
-          className={`flex items-stretch border-b border-gray-100 hover:bg-gray-50 ${
-            !isActive ? "opacity-70" : ""
-          }`}
+          className={`flex items-center border-b border-gray-100 hover:bg-gray-50 h-12 ${!isActive ? "opacity-70" : ""}`}
         >
           {/* Name column */}
-          <div className="w-48 flex items-center px-3">
+          <div className="w-48 flex items-center px-3 h-full">
             <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
               {capability.name}
             </span>
@@ -77,11 +74,11 @@ export default function TimelineRow({
             )}
           </div>
           {/* RAG column */}
-          <div className="w-12 flex items-center justify-center">{ragDot(capability.ragStatus)}</div>
+          <div className="w-12 flex items-center justify-center h-full">{ragDot(capability.ragStatus)}</div>
           {/* Status column */}
-          <div className="w-28 flex items-center text-xs text-gray-600">{capability.status}</div>
-          {/* History icon column (only show on first/main plan for this capability) */}
-          <div className="w-16 flex items-center justify-center">
+          <div className="w-28 flex items-center h-full text-xs text-gray-600">{capability.status}</div>
+          {/* History icon column (show only on main plan) */}
+          <div className="w-16 flex items-center justify-center h-full">
             {planIndex === 0 && hasHistory && (
               <Button
                 variant="ghost"
@@ -94,9 +91,10 @@ export default function TimelineRow({
               </Button>
             )}
           </div>
-          {/* Timeline (phases bar) column with a vertical divider */}
-          <div className="flex-1 relative h-10 px-2 min-w-0 border-l border-gray-200">
-            <div className="relative h-full w-full">
+          {/* Timeline (phases bar) column, with a vertical divider */}
+          <div className="flex-1 relative h-full px-2 min-w-0 border-l border-gray-200 flex items-center">
+            {/* The timeline container uses flex for vertical centering */}
+            <div className="relative w-full h-7 flex items-center">
               {phases.map(phase => {
                 const startDate = parsePlanDate(plan[phase.startField]);
                 const endDate = parsePlanDate(plan[phase.endField]);
@@ -104,11 +102,11 @@ export default function TimelineRow({
                 return (
                   <div
                     key={phase.key}
-                    className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+                    className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
                     style={{
                       left: position.left,
                       width: position.width,
-                      top: "7px",
+                      top: 0, // remove offset, align with parent
                     }}
                     title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                   >
@@ -125,4 +123,3 @@ export default function TimelineRow({
     </div>
   );
 }
-
