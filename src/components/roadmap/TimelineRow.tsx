@@ -12,6 +12,7 @@ interface Phase {
   startField: string;
   endField: string;
 }
+
 interface Capability {
   id: string;
   name: string;
@@ -34,6 +35,18 @@ interface TimelineRowProps {
   phases: Phase[];
 }
 
+function ragDot(ragStatus: string) {
+  let color = "bg-green-500";
+  if (ragStatus === "Red") color = "bg-red-500";
+  else if (ragStatus === "Amber") color = "bg-amber-400";
+  return (
+    <span
+      className={`inline-block h-3 w-3 rounded-full ${color}`}
+      title={ragStatus}
+    />
+  );
+}
+
 export default function TimelineRow({
   capability,
   plansToShow,
@@ -44,50 +57,45 @@ export default function TimelineRow({
   parsePlanDate,
   phases,
 }: TimelineRowProps) {
+  // Layout: Columns for Name, RAG, Status, History, Timeline
   return (
     <div className="bg-white">
       {plansToShow.map(({ plan, isActive }, planIndex) => (
-        <div key={plan.id} className="flex items-stretch py-4 hover:bg-gray-50">
-          {/* Capability Column */}
-          <div className="w-56 flex-shrink-0 px-4 flex flex-col justify-center">
-            <div>
-              <h3 className="font-medium text-gray-900 text-sm truncate max-w-[8rem]">
-                {capability.name}
-                {!isActive && (
-                  <span className="text-xs text-gray-500 ml-2">v{plan.version}</span>
-                )}
-              </h3>
-              <div className="flex items-center space-x-2 mt-1">
-                <Badge
-                  variant="outline"
-                  className={
-                    capability.ragStatus === 'Red' ? 'border-red-200 text-red-800 bg-red-50' :
-                    capability.ragStatus === 'Amber' ? 'border-amber-200 text-amber-800 bg-amber-50' :
-                    'border-green-200 text-green-800 bg-green-50'
-                  }
-                >
-                  {capability.ragStatus}
-                </Badge>
-                <span className="text-xs text-gray-500">{capability.status}</span>
-              </div>
-              {/* Show/Hide History button row */}
-              {planIndex === 0 && hasHistory && (
-                <div className="mt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onToggleHistory}
-                    className="text-xs w-full flex justify-start"
-                  >
-                    <History className="h-3 w-3 mr-1" />
-                    {showHistory ? 'Hide' : 'Show'} History
-                  </Button>
-                </div>
-              )}
-            </div>
+        <div
+          key={plan.id}
+          className={`flex items-stretch border-b border-gray-100 hover:bg-gray-50 ${
+            !isActive ? "opacity-70" : ""
+          }`}
+        >
+          {/* Name column */}
+          <div className="w-48 flex items-center px-3">
+            <span className="font-medium truncate max-w-[8rem]" title={capability.name}>
+              {capability.name}
+            </span>
+            {!isActive && (
+              <span className="ml-2 text-xs text-gray-400 align-middle">v{plan.version}</span>
+            )}
           </div>
-          {/* Timeline Column */}
-          <div className="flex-1 relative h-8 px-4 min-w-0">
+          {/* RAG column */}
+          <div className="w-12 flex items-center justify-center">{ragDot(capability.ragStatus)}</div>
+          {/* Status column */}
+          <div className="w-28 flex items-center text-xs text-gray-600">{capability.status}</div>
+          {/* History icon column (only show on first/main plan for this capability) */}
+          <div className="w-16 flex items-center justify-center">
+            {planIndex === 0 && hasHistory && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleHistory}
+                className="h-8 w-8 p-0"
+                title={showHistory ? "Hide History" : "Show History"}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {/* Timeline (phases bar) column */}
+          <div className="flex-1 relative h-10 px-2 min-w-0">
             <div className="relative h-full w-full">
               {phases.map(phase => {
                 const startDate = parsePlanDate(plan[phase.startField]);
@@ -96,13 +104,13 @@ export default function TimelineRow({
                 return (
                   <div
                     key={phase.key}
-                    className={`absolute h-6 rounded ${phase.color} ${isActive ? '' : 'opacity-60'} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
+                    className={`absolute h-7 rounded ${phase.color} ${isActive ? "" : "opacity-60"} shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
                     style={{
                       left: position.left,
                       width: position.width,
-                      top: '6px',
+                      top: "7px",
                     }}
-                    title={`${phase.label}: ${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd')}`}
+                    title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                   >
                     <div className="text-xs text-white font-medium p-1 truncate">
                       {phase.label}
