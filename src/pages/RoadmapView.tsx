@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,13 +131,15 @@ export default function RoadmapView() {
                     const isActive = planIndex === 0;
                     return (
                       <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: ROW_HEIGHT }}>
-                        {/* Capability Name */}
+                        {/* Capability Name with Version */}
                         <div className="flex items-center px-3 border-r border-gray-200" style={{ width: columns[0].width }}>
                           <span className="font-medium truncate" title={capability.name}>
                             {capability.name}
                           </span>
-                          {!isActive && (
-                            <span className="ml-2 text-xs text-gray-400">v{plan.version}</span>
+                          {plan && (
+                            <span className="ml-2 text-xs text-gray-500 font-normal">
+                              v{plan.version}
+                            </span>
                           )}
                         </div>
                         
