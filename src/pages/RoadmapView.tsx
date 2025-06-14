@@ -1,16 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { History, MapPin } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays, addMonths, subMonths, min as dateMin, max as dateMax } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
-  const [selectedCapability, setSelectedCapability] = useState<string | null>(null);
+  // --- 1. Compute default timeline window (3 months before, 9 months after now) ---
+  const now = new Date();
+  const timelineDefaultStart = startOfMonth(subMonths(now, 3));
+  const timelineDefaultEnd = endOfMonth(addMonths(now, 9));
 
   // Get all roadmap plans (active and historical)
   const allPlans = useMemo(() => {
@@ -30,17 +33,11 @@ export default function RoadmapView() {
     return plans;
   }, [data.capabilities, showHistory, getActiveRoadmapPlan, getRoadmapHistory]);
 
-  // Calculate timeline bounds
-  const timelineBounds = useMemo(() => {
-    if (allPlans.length === 0) {
-      const now = new Date();
-      return {
-        start: startOfMonth(now),
-        end: endOfMonth(new Date(now.getFullYear(), now.getMonth() + 12))
-      };
-    }
-    let minDate = new Date();
-    let maxDate = new Date();
+  // --- 2. Compute *true* bounds with all plans' dates ---
+  const planDateExtremes = useMemo(() => {
+    if (allPlans.length === 0) return { minDate: timelineDefaultStart, maxDate: timelineDefaultEnd };
+    let minDate = timelineDefaultStart;
+    let maxDate = timelineDefaultEnd;
     allPlans.forEach(({ plan }) => {
       const dates = [
         plan.requirementStartDate,
@@ -53,41 +50,58 @@ export default function RoadmapView() {
         plan.cstEndDate,
         plan.uatStartDate,
         plan.uatEndDate,
-      ];
-      dates.forEach(date => {
-        if (date < minDate) minDate = date;
-        if (date > maxDate) maxDate = date;
-      });
+      ].map(d => new Date(d));
+      minDate = dateMin([minDate, ...dates]);
+      maxDate = dateMax([maxDate, ...dates]);
     });
-    return {
-      start: startOfMonth(minDate),
-      end: endOfMonth(maxDate)
-    };
-  }, [allPlans]);
+    return { minDate: startOfMonth(minDate), maxDate: endOfMonth(maxDate) };
+  }, [allPlans, timelineDefaultStart, timelineDefaultEnd]);
 
-  const months = eachMonthOfInterval(timelineBounds);
-  const totalDays = differenceInDays(timelineBounds.end, timelineBounds.start);
+  // --- 3. Use default visible window for viewport, but allow content width to spread over actual plan range ---
+  const visibleTimelineStart = timelineDefaultStart;
+  const visibleTimelineEnd = timelineDefaultEnd;
+  const actualContentStart = planDateExtremes.minDate;
+  const actualContentEnd = planDateExtremes.maxDate;
 
-  const toggleHistory = (capabilityId: string) => {
-    setShowHistory(prev => ({
-      ...prev,
-      [capabilityId]: !prev[capabilityId]
-    }));
-  };
+  // Months for header (for visible window)
+  const headerMonths = eachMonthOfInterval({ start: visibleTimelineStart, end: visibleTimelineEnd });
+  // Months for content (could be larger than header)
+  const contentMonths = eachMonthOfInterval({ start: actualContentStart, end: actualContentEnd });
 
-  // Instead of stacking (offsetting) by phase, show all bars in a single horizontal line
+  // We calculate width: each month will be fixed px (e.g. 120px), so content W = Nmonths * px/unit
+  const MONTH_WIDTH = 120;
+  const TIMELINE_MIN_HEIGHT = 140;
+  const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
+  const timelineViewportWidth = headerMonths.length * MONTH_WIDTH;
+
+  // For aligning bars: offset every plan/phase bars based on their date relative to actualContentStart
   const getPhasePosition = (startDate: Date, endDate: Date) => {
-    const startOffset = differenceInDays(startDate, timelineBounds.start);
+    // clamp values within min/max
+    const startOffset = differenceInDays(startDate, actualContentStart);
     const duration = differenceInDays(endDate, startDate);
-    const leftPercent = (startOffset / totalDays) * 100;
-    const widthPercent = (duration / totalDays) * 100;
+    const totalDays = differenceInDays(actualContentEnd, actualContentStart);
+    const left = (startOffset / totalDays) * 100;
+    const width = (duration / totalDays) * 100;
     return {
-      left: `${Math.max(0, leftPercent)}%`,
-      width: `${Math.max(1, widthPercent)}%`
+      left: `calc(${left}% )`,
+      width: `calc(${width}% )`
     };
   };
 
-  // Renamed phases as per the requirement
+  // --- 4. Use ref+effect: scroll to today in view on mount/first render (so default is today centered/at start) ---
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Scroll so "today" (or the month containing today) is visible at left after mount.
+    if (!scrollAreaRef.current) return;
+    // where to scroll left? (find the pixel offset of current month in content, subtract month width * 3 for 3 months before)
+    const currentMonthIndex = contentMonths.findIndex(m => 
+      m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth()
+    );
+    const scrollToPx = Math.max(0, (currentMonthIndex - 3) * MONTH_WIDTH);
+    scrollAreaRef.current.scrollLeft = scrollToPx;
+  }, [now, contentMonths.length]);
+
+  // Renamed phases as per your requirement
   const phases = [
     { key: 'requirement', label: 'REQ', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
     { key: 'design', label: 'DES', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
@@ -104,24 +118,41 @@ export default function RoadmapView() {
           <CardHeader>
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
-          {/* -- Wrap the timeline table in a horizontal ScrollArea -- */}
           <CardContent className="p-0">
-            {/* ADDED: force visible horizontal scroll! */}
-            <ScrollArea className="w-full h-auto overflow-x-auto" style={{ minHeight: 140 }}>
-              {/* Timeline Header + Content is inside this horizontally scrollable area */}
-              <div className="w-max min-w-full">
-                {/* Timeline Header */}
-                <div className="border-b bg-gray-50 p-4">
+            {/* Horizontal scroll area for timeline */}
+            <div
+              className="w-full"
+              style={{
+                // fixed width for viewport, this ensures we always see only 12 months (3 prior, 9 future)
+                overflowX: "auto",
+                minHeight: TIMELINE_MIN_HEIGHT,
+              }}
+              ref={scrollAreaRef}
+            >
+              {/* This container grows if there are extra months (plans outside of window) */}
+              <div
+                className="relative"
+                style={{
+                  minWidth: `${timelineViewportWidth}px`,
+                  width: `${timelineContentWidth}px`,
+                  maxWidth: "none",
+                }}
+              >
+                {/* Timeline Header (relative to the plan date range, contentMonths) */}
+                <div className="border-b bg-gray-50 p-4 sticky top-0 z-10">
                   <div className="flex">
-                    {/* Make capability column width smaller */}
-                    <div className="w-56 flex-shrink-0"></div>
+                    {/* Capability column offset */}
+                    <div className="w-56 flex-shrink-0" />
                     <div className="flex-1 relative">
-                      <div className="flex">
-                        {months.map((month, index) => (
+                      <div className="flex" style={{ minWidth: `${timelineContentWidth}px` }}>
+                        {contentMonths.map((month) => (
                           <div
                             key={month.toISOString()}
-                            className="flex-1 text-center text-sm font-medium text-gray-600 border-l border-gray-200 px-2"
-                            style={{ minWidth: '60px' }}
+                            className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
+                            style={{
+                              minWidth: `${MONTH_WIDTH}px`,
+                              width: `${MONTH_WIDTH}px`,
+                            }}
                           >
                             {format(month, "MMM yyyy")}
                           </div>
@@ -141,7 +172,6 @@ export default function RoadmapView() {
                       ...(showHistory[capability.id] ? history.slice(1).map(plan => ({ plan, isActive: false })) : [])
                     ];
                     if (plansToShow.length === 0) return null;
-
                     return (
                       <div key={capability.id} className="bg-white">
                         {plansToShow.map(({ plan, isActive }, planIndex) => (
@@ -175,7 +205,10 @@ export default function RoadmapView() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => toggleHistory(capability.id)}
+                                      onClick={() => setShowHistory(prev => ({
+                                        ...prev,
+                                        [capability.id]: !prev[capability.id]
+                                      }))}
                                       className="text-xs w-full flex justify-start"
                                     >
                                       <History className="h-3 w-3 mr-1" />
@@ -189,8 +222,8 @@ export default function RoadmapView() {
                             <div className="flex-1 relative h-8 px-4 min-w-0">
                               <div className="relative h-full w-full">
                                 {phases.map(phase => {
-                                  const startDate = plan[phase.startField as keyof typeof plan] as Date;
-                                  const endDate = plan[phase.endField as keyof typeof plan] as Date;
+                                  const startDate = new Date(plan[phase.startField as keyof typeof plan]);
+                                  const endDate = new Date(plan[phase.endField as keyof typeof plan]);
                                   const position = getPhasePosition(startDate, endDate);
                                   return (
                                     <div
@@ -218,7 +251,7 @@ export default function RoadmapView() {
                   })}
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -254,3 +287,5 @@ export default function RoadmapView() {
     </div>
   );
 }
+
+// Reminder: This file is growing large (>270 lines)! Please consider refactoring it into smaller components for maintainability.
