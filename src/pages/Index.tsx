@@ -1,6 +1,8 @@
+
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Target, Calendar, Map, BarChart3 } from "lucide-react";
 import { format, eachMonthOfInterval, differenceInDays } from "date-fns";
 
@@ -134,7 +136,7 @@ const Index = () => {
   };
 
   const timelineBounds = getTimelineBounds();
-  const MONTH_WIDTH = 80;
+  const MONTH_WIDTH = 120;
   
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     if (!timelineBounds) return { left: '0%', width: '0%' };
@@ -156,6 +158,8 @@ const Index = () => {
     start: timelineBounds.minDate,
     end: timelineBounds.maxDate
   }) : [];
+
+  const timelineContentWidth = months.length * MONTH_WIDTH;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -198,73 +202,80 @@ const Index = () => {
             <p className="text-gray-500 text-center py-8">No capabilities with roadmap plans found</p>
           ) : (
             <div className="space-y-4">
-              {/* Timeline header with months */}
-              {timelineBounds && (
-                <div className="flex">
-                  <div className="w-48 flex-shrink-0"></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex" style={{ minWidth: `${months.length * MONTH_WIDTH}px` }}>
-                      {months.map((month) => (
-                        <div
-                          key={month.toISOString()}
-                          className="text-center text-xs font-medium text-gray-600 border-l border-gray-200 bg-gray-50 py-2"
-                          style={{ minWidth: `${MONTH_WIDTH}px`, width: `${MONTH_WIDTH}px` }}
-                        >
-                          {format(month, "MMM yyyy")}
+              <div className="flex">
+                {/* Fixed capability info column */}
+                <div className="w-64 flex-shrink-0 pr-4">
+                  <div className="h-12 flex items-center justify-center border-b border-gray-200 bg-gray-50 font-medium text-gray-700">
+                    Capability
+                  </div>
+                  {capabilitiesWithPlans.map(({ capability }) => (
+                    <div key={capability.id} className="h-16 flex flex-col justify-center p-3 border-b border-gray-100">
+                      <h3 className="font-medium text-gray-900 truncate text-sm mb-1">
+                        {capability.name}
+                      </h3>
+                      <div className="flex gap-1">
+                        <Badge className={`${getRAGStatusColor(capability.ragStatus)} text-xs`}>
+                          {capability.ragStatus}
+                        </Badge>
+                        <Badge variant="outline" className={`${getStatusColor(capability.status)} text-xs`}>
+                          {capability.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scrollable timeline area */}
+                <div className="flex-1 min-w-0">
+                  <ScrollArea className="w-full">
+                    <div style={{ width: `${timelineContentWidth}px` }}>
+                      {/* Timeline header with months */}
+                      <div className="h-12 flex border-b border-gray-200 bg-gray-50">
+                        {months.map((month) => (
+                          <div
+                            key={month.toISOString()}
+                            className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
+                            style={{ minWidth: `${MONTH_WIDTH}px`, width: `${MONTH_WIDTH}px` }}
+                          >
+                            {format(month, "MMM yyyy")}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Timeline bars for each capability */}
+                      {capabilitiesWithPlans.map(({ capability, plan }) => (
+                        <div key={capability.id} className="h-16 border-b border-gray-100 flex items-center">
+                          <div className="relative w-full h-8">
+                            {phases.map((phase) => {
+                              const startDate = plan![phase.startField] as Date;
+                              const endDate = plan![phase.endField] as Date;
+                              const position = getPhasePosition(startDate, endDate);
+                              
+                              return (
+                                <div
+                                  key={phase.key}
+                                  className={`absolute h-6 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                                  style={{
+                                    left: position.left,
+                                    width: position.width,
+                                    top: '4px',
+                                  }}
+                                  title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
+                                >
+                                  <div className="text-xs text-white font-medium px-2 truncate">
+                                    {phase.label}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
                 </div>
-              )}
-
-              {/* Capability rows */}
-              {capabilitiesWithPlans.map(({ capability, plan }) => (
-                <div key={capability.id} className="flex border rounded-lg hover:bg-gray-50 transition-colors">
-                  {/* Capability info column */}
-                  <div className="w-48 flex-shrink-0 p-4 border-r">
-                    <h3 className="font-medium text-gray-900 truncate mb-2">
-                      {capability.name}
-                    </h3>
-                    <div className="flex flex-col gap-1">
-                      <Badge className={`${getRAGStatusColor(capability.ragStatus)} text-xs`}>
-                        {capability.ragStatus}
-                      </Badge>
-                      <Badge variant="outline" className={`${getStatusColor(capability.status)} text-xs`}>
-                        {capability.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Timeline column */}
-                  <div className="flex-1 min-w-0 p-4">
-                    <div className="relative h-8" style={{ minWidth: `${months.length * MONTH_WIDTH}px` }}>
-                      {phases.map((phase) => {
-                        const startDate = plan![phase.startField] as Date;
-                        const endDate = plan![phase.endField] as Date;
-                        const position = getPhasePosition(startDate, endDate);
-                        
-                        return (
-                          <div
-                            key={phase.key}
-                            className={`absolute h-6 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
-                            style={{
-                              left: position.left,
-                              width: position.width,
-                              top: '4px',
-                            }}
-                            title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
-                          >
-                            <div className="text-xs text-white font-medium px-2 truncate">
-                              {phase.label}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
+              </div>
             </div>
           )}
         </CardContent>
