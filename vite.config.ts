@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   // Set base path for GitHub Pages deployment
-  base: process.env.NODE_ENV === 'production' ? '/milestone-maestro-roadmap-flow/' : '/',
+  base: process.env.NODE_ENV === 'production' ? 'milestone-maestro-roadmap-flow' : '/',
   plugins: [
     react(),
     mode === 'development' &&
