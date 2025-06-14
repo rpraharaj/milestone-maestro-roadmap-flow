@@ -19,21 +19,25 @@ const Layout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+      {/* Sidebar: overlays on mobile, shows as static on desktop */}
+      {/* Mobile Sidebar Backdrop */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          "fixed inset-0 z-40 bg-gray-600 bg-opacity-75 transition-opacity lg:hidden",
+          sidebarOpen ? "block" : "hidden"
         )}
+        onClick={() => setSidebarOpen(false)}
+      />
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "z-50 flex-shrink-0 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out",
+          "flex flex-col",
+          sidebarOpen ? "fixed inset-y-0 left-0 translate-x-0" : "fixed inset-y-0 -translate-x-full",
+          "lg:static lg:translate-x-0"
+        )}
+        style={{ height: "100vh" }}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           <h1 className="text-xl font-bold text-gray-900">Project Manager</h1>
@@ -46,7 +50,7 @@ const Layout = () => {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <nav className="mt-8">
+        <nav className="mt-8 flex-1 overflow-y-auto">
           <div className="px-2 space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
@@ -76,10 +80,10 @@ const Layout = () => {
             })}
           </div>
         </nav>
-      </div>
+      </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 flex flex-col">
         <div className="flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200 lg:px-6">
           <Button
             variant="ghost"
@@ -95,7 +99,7 @@ const Layout = () => {
             </span>
           </div>
         </div>
-        <main className="px-6 pt-2 pb-6"> {/* Changed p-6 to px-6 pt-2 pb-6 */}
+        <main className="flex-1 px-6 pt-2 pb-6 w-full mx-auto max-w-7xl">
           <Outlet />
         </main>
       </div>
@@ -104,4 +108,3 @@ const Layout = () => {
 };
 
 export default Layout;
-
