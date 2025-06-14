@@ -130,11 +130,28 @@ const CapabilityManagement = () => {
 
         const headers = parseCSVLine(lines[0]);
         
-        // Validate headers
+        // Validate headers - check if all required headers are present (case insensitive and trimmed)
         const expectedHeaders = ['Name', 'Workstream Lead', 'SME', 'BA', 'Milestone', 'Status', 'RAG Status', 'Notes'];
-        if (!expectedHeaders.every(header => headers.includes(header))) {
-          throw new Error('Invalid CSV format. Please ensure headers match the export format: ' + expectedHeaders.join(', '));
+        const normalizedHeaders = headers.map(h => h.trim());
+        const normalizedExpected = expectedHeaders.map(h => h.toLowerCase());
+        const normalizedActual = normalizedHeaders.map(h => h.toLowerCase());
+        
+        const missingHeaders = normalizedExpected.filter(header => 
+          !normalizedActual.includes(header)
+        );
+        
+        if (missingHeaders.length > 0) {
+          throw new Error(`Missing required headers: ${missingHeaders.join(', ')}. Expected headers: ${expectedHeaders.join(', ')}`);
         }
+
+        // Create a mapping of header positions
+        const headerMap: { [key: string]: number } = {};
+        normalizedHeaders.forEach((header, index) => {
+          const normalizedHeader = header.toLowerCase();
+          if (normalizedExpected.includes(normalizedHeader)) {
+            headerMap[normalizedHeader] = index;
+          }
+        });
 
         let importCount = 0;
         const errors: string[] = [];
@@ -146,20 +163,20 @@ const CapabilityManagement = () => {
           try {
             const values = parseCSVLine(line);
             
-            if (values.length < 8) {
-              errors.push(`Row ${i + 1}: Not enough columns (expected 8, got ${values.length})`);
+            if (values.length < expectedHeaders.length) {
+              errors.push(`Row ${i + 1}: Not enough columns (expected ${expectedHeaders.length}, got ${values.length})`);
               continue;
             }
 
             const capability = {
-              name: values[0] || '',
-              workstreamLead: values[1] || '',
-              sme: values[2] || '',
-              ba: values[3] || '',
-              milestone: values[4] || '',
-              status: values[5] as Capability['status'],
-              ragStatus: values[6] as Capability['ragStatus'],
-              notes: values[7] || '',
+              name: values[headerMap['name']] || '',
+              workstreamLead: values[headerMap['workstream lead']] || '',
+              sme: values[headerMap['sme']] || '',
+              ba: values[headerMap['ba']] || '',
+              milestone: values[headerMap['milestone']] || '',
+              status: values[headerMap['status']] as Capability['status'],
+              ragStatus: values[headerMap['rag status']] as Capability['ragStatus'],
+              notes: values[headerMap['notes']] || '',
             };
 
             // Validate required fields
@@ -208,6 +225,7 @@ const CapabilityManagement = () => {
           variant: errors.length > 0 && importCount === 0 ? "destructive" : "default",
         });
       } catch (error) {
+        console.error('Import error:', error);
         toast({
           title: "Import failed",
           description: error instanceof Error ? error.message : "Failed to import CSV file.",
