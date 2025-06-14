@@ -76,17 +76,44 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   }, [data]);
 
   const addCapability = (capability: Omit<Capability, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const now = new Date();
-    const newCapability: Capability = {
-      ...capability,
-      id: generateId(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    setData(prev => ({
-      ...prev,
-      capabilities: [...prev.capabilities, newCapability],
-    }));
+    console.log('🔄 DataContext: addCapability called with:', capability);
+    
+    try {
+      // Validate required fields
+      if (!capability.name || capability.name.trim() === '') {
+        console.error('❌ DataContext: Capability name is required');
+        throw new Error('Capability name is required');
+      }
+
+      const now = new Date();
+      const newCapability: Capability = {
+        id: generateId(),
+        name: capability.name.trim(),
+        workstreamLead: capability.workstreamLead || '',
+        sme: capability.sme || '',
+        ba: capability.ba || '',
+        milestone: capability.milestone || '',
+        status: capability.status || 'Not Started',
+        ragStatus: capability.ragStatus || 'Green',
+        notes: capability.notes || '',
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      console.log('✅ DataContext: New capability created:', newCapability);
+
+      setData(prev => {
+        const newData = {
+          ...prev,
+          capabilities: [...prev.capabilities, newCapability],
+        };
+        console.log('✅ DataContext: State updated successfully');
+        return newData;
+      });
+    } catch (error) {
+      console.error('❌ DataContext: Error in addCapability:', error);
+      throw error;
+    }
   };
 
   const updateCapability = (id: string, updates: Partial<Capability>) => {

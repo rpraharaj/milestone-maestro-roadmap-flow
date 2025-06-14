@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
   });
 
   useEffect(() => {
+    console.log('🔄 CapabilityDialog: Dialog opened, isOpen:', isOpen, 'capability:', capability);
+    
     if (capability) {
       setFormData({
         name: capability.name,
@@ -67,42 +70,67 @@ const CapabilityDialog = ({ capability, isOpen, onClose }: CapabilityDialogProps
     }
   }, [capability, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
+    console.log('🔄 CapabilityDialog: Form submitted with data:', formData);
+
+    try {
+      // Validate form data
+      if (!formData.name || !formData.name.trim()) {
+        console.error('❌ CapabilityDialog: Capability name is required');
+        toast({
+          title: "Error",
+          description: "Capability name is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare form data for submission
+      const preparedFormData = {
+        name: formData.name.trim(),
+        workstreamLead: formData.workstreamLead.trim(),
+        sme: formData.sme.trim(),
+        ba: formData.ba.trim(),
+        milestone: formData.milestone === "none" ? "" : formData.milestone,
+        status: formData.status,
+        ragStatus: formData.ragStatus,
+        notes: formData.notes.trim(),
+      };
+
+      console.log('🔄 CapabilityDialog: Prepared data for submission:', preparedFormData);
+
+      if (capability) {
+        console.log('🔄 CapabilityDialog: Updating existing capability');
+        await updateCapability(capability.id, preparedFormData);
+        toast({
+          title: "Success",
+          description: "Capability updated successfully",
+        });
+      } else {
+        console.log('🔄 CapabilityDialog: Adding new capability');
+        await addCapability(preparedFormData);
+        toast({
+          title: "Success",
+          description: "Capability added successfully",
+        });
+      }
+      
+      console.log('✅ CapabilityDialog: Operation completed successfully');
+      onClose();
+    } catch (error) {
+      console.error('❌ CapabilityDialog: Error in handleSubmit:', error);
       toast({
         title: "Error",
-        description: "Capability name is required",
+        description: `Failed to ${capability ? 'update' : 'add'} capability: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
-      return;
     }
-
-    // If milestone is "none", save as "" (so backend/data thinks it's empty)
-    const preparedFormData = {
-      ...formData,
-      milestone: formData.milestone === "none" ? "" : formData.milestone,
-    };
-
-    if (capability) {
-      updateCapability(capability.id, preparedFormData);
-      toast({
-        title: "Success",
-        description: "Capability updated successfully",
-      });
-    } else {
-      addCapability(preparedFormData);
-      toast({
-        title: "Success",
-        description: "Capability added successfully",
-      });
-    }
-    
-    onClose();
   };
 
   const handleChange = (field: string, value: string) => {
+    console.log('🔄 CapabilityDialog: Field changed:', field, 'value:', value);
     setFormData(prev => ({
       ...prev,
       [field]: value,
