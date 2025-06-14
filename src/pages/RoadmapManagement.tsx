@@ -218,13 +218,7 @@ const RoadmapManagement = () => {
   };
 
   return (
-    <div className="space-y-4 p-4">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Roadmap Management</h1>
-        <p className="text-gray-600">Manage roadmap plans for your capabilities</p>
-      </div>
-
+    <div className="space-y-4">
       {/* Search filter with collapsible container */}
       <CollapsibleFilter 
         title="Search & Filters" 
