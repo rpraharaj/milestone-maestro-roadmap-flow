@@ -44,7 +44,7 @@ export default function RoadmapView() {
 
   const headerMonths = eachMonthOfInterval({ start: visibleTimelineStart, end: visibleTimelineEnd });
   const contentMonths = headerMonths;
-  const timelineContentWidth = contentMonths.length * MONTH_WIDTH;
+  const timelineContentWidth = contentMonths.length * 120; // MONTH_WIDTH
 
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     const clampedStart = dateMax([startDate, actualContentStart]);
@@ -77,6 +77,10 @@ export default function RoadmapView() {
     { label: 'Status', width: 112 },      // w-28
     { label: '', width: 64 },             // w-16 (history icon)
   ];
+  
+  const rowHeight = 48;
+  const TIMELINE_LEFT_WIDTH = 48 + 12 + 28 + 16; // 104px for fixed columns
+  const MONTH_WIDTH = 120;
 
   return (
     <div className="space-y-6 flex flex-col">
@@ -86,8 +90,62 @@ export default function RoadmapView() {
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
+            {/* HEADER ROW: fixed-cols (left) + months (right) */}
             <div className="flex w-full">
-              {/* Fixed columns (always visible on left) */}
+              {/* Fixed columns header */}
+              <div
+                className="z-10 bg-white border-r border-gray-200"
+                style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}
+              >
+                <div className="flex">
+                  {columns.map((col) => (
+                    <div
+                      key={col.label}
+                      className="text-sm font-medium text-gray-600 flex items-center border-r last:border-r-0 border-gray-200 px-3"
+                      style={{
+                        minWidth: col.width,
+                        maxWidth: col.width,
+                        width: col.width,
+                        height: rowHeight,
+                      }}
+                    >
+                      {col.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Timeline months header (right) */}
+              <div
+                className="flex-1"
+                style={{ overflow: "hidden" }}
+              >
+                <div
+                  className="flex"
+                  style={{
+                    minWidth: `${timelineContentWidth}px`,
+                    width: `${timelineContentWidth}px`,
+                    height: rowHeight,
+                  }}
+                >
+                  {contentMonths.map((month) => (
+                    <div
+                      key={month.toISOString()}
+                      className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center bg-gray-50"
+                      style={{
+                        minWidth: `${MONTH_WIDTH}px`,
+                        width: `${MONTH_WIDTH}px`,
+                        height: rowHeight,
+                      }}
+                    >
+                      {format(month, "MMM yyyy")}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* BODY ROWS: fixed-cols (left) + timeline bars (right, scrollable) */}
+            <div className="flex w-full">
+              {/* Fixed columns rows */}
               <TimelineFixedColumns
                 capabilities={data.capabilities}
                 getActiveRoadmapPlan={getActiveRoadmapPlan}
@@ -101,41 +159,16 @@ export default function RoadmapView() {
                 }
                 leftWidth={TIMELINE_LEFT_WIDTH}
                 columns={columns}
-                rowHeight={48}
+                rowHeight={rowHeight}
               />
-              {/* Scrollable timeline (months + plan bars) - right of fixed columns */}
+              {/* Timeline scrollable plan bars (right) */}
               <div
                 className="overflow-x-auto flex-1"
                 style={{
                   minWidth: `${timelineContentWidth}px`,
                   maxWidth: `calc(100vw - ${TIMELINE_LEFT_WIDTH}px)`,
                 }}
-                tabIndex={0}
               >
-                {/* Timeline months header */}
-                <div
-                  className="flex"
-                  style={{
-                    minWidth: `${timelineContentWidth}px`,
-                    width: `${timelineContentWidth}px`,
-                    height: 48,
-                  }}
-                >
-                  {contentMonths.map((month) => (
-                    <div
-                      key={month.toISOString()}
-                      className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center bg-gray-50"
-                      style={{
-                        minWidth: `${MONTH_WIDTH}px`,
-                        width: `${MONTH_WIDTH}px`,
-                        height: 48,
-                      }}
-                    >
-                      {format(month, "MMM yyyy")}
-                    </div>
-                  ))}
-                </div>
-                {/* Timeline plan bars */}
                 <VisualTimeline
                   capabilities={data.capabilities}
                   getActiveRoadmapPlan={getActiveRoadmapPlan}
@@ -148,6 +181,7 @@ export default function RoadmapView() {
                   MONTH_WIDTH={MONTH_WIDTH}
                   parsePlanDate={parsePlanDate}
                   getPhasePosition={getPhasePosition}
+                  rowHeight={rowHeight}
                 />
               </div>
             </div>
