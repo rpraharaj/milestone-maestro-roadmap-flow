@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Calendar, Map, MapPin, BarChart3, Settings, Target, Expand, Collapse } from "lucide-react";
+import { Menu, X, Calendar, Map, MapPin, BarChart3, Settings, Target, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Titles and subtitles for each main route
 const pageHeaders: Record<string, { title: string; subtitle: string }> = {
@@ -137,9 +137,9 @@ const Layout = () => {
             className="rounded-full border"
           >
             {sidebarCollapsed ? (
-              <Expand className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5" />
             ) : (
-              <Collapse className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             )}
           </Button>
         </div>
