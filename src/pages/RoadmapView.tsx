@@ -39,6 +39,7 @@ export default function RoadmapView() {
     let minDate = timelineDefaultStart;
     let maxDate = timelineDefaultEnd;
     allPlans.forEach(({ plan }) => {
+      // Only include values which are strings, numbers, or Date (skip boolean, undefined, etc)
       const dates = [
         plan.requirementStartDate,
         plan.requirementEndDate,
@@ -50,7 +51,9 @@ export default function RoadmapView() {
         plan.cstEndDate,
         plan.uatStartDate,
         plan.uatEndDate,
-      ].map(d => new Date(d));
+      ]
+        .filter(d => !!d && (typeof d === "string" || typeof d === "number" || d instanceof Date))
+        .map(d => new Date(d as string | number | Date));
       minDate = dateMin([minDate, ...dates]);
       maxDate = dateMax([maxDate, ...dates]);
     });
