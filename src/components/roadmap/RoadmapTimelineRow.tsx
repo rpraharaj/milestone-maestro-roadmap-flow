@@ -4,11 +4,24 @@ import { RoadmapPlan, Capability } from "@/types";
 import { addDays, format, isWithinInterval, isSameDay } from "date-fns";
 import classNames from "clsx";
 
+// Define date field keys for RoadmapPlan for extra type safety
+type RoadmapPlanDateField =
+  | "requirementStartDate"
+  | "requirementEndDate"
+  | "designStartDate"
+  | "designEndDate"
+  | "devStartDate"
+  | "devEndDate"
+  | "cstStartDate"
+  | "cstEndDate"
+  | "uatStartDate"
+  | "uatEndDate";
+
 interface PhaseRange {
   label: string;
   color: string; // tailwind color bg
-  start: Date;
-  end: Date;
+  start: RoadmapPlanDateField;
+  end: RoadmapPlanDateField;
 }
 
 type Props = {
@@ -19,7 +32,7 @@ type Props = {
 };
 
 // Each plan phase will be highlighted with a certain background color.
-const PHASES: { label: string; color: string; start: keyof RoadmapPlan; end: keyof RoadmapPlan }[] = [
+const PHASES: { label: string; color: string; start: RoadmapPlanDateField; end: RoadmapPlanDateField }[] = [
   {
     label: "Requirements",
     color: "bg-blue-200",
@@ -55,13 +68,19 @@ const PHASES: { label: string; color: string; start: keyof RoadmapPlan; end: key
 // Determine for a given day if it's in a phase, and which one
 function getPhaseForDay(plan: RoadmapPlan, day: Date) {
   for (let phase of PHASES) {
-    if (
-      isWithinInterval(day, {
-        start: plan[phase.start],
-        end: plan[phase.end],
-      })
-    ) {
-      return phase;
+    // Add runtime check in addition to the static type
+    const start = plan[phase.start];
+    const end = plan[phase.end];
+    // Make sure start and end are Dates before passing to isWithinInterval
+    if (start instanceof Date && end instanceof Date) {
+      if (
+        isWithinInterval(day, {
+          start,
+          end,
+        })
+      ) {
+        return phase;
+      }
     }
   }
   return null;
@@ -96,3 +115,4 @@ const RoadmapTimelineRow: React.FC<Props> = ({ capability, plan, days, faded }) 
 };
 
 export default RoadmapTimelineRow;
+
