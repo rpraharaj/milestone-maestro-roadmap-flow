@@ -5,6 +5,37 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Calendar, Map, MapPin, BarChart3, Settings, Target } from "lucide-react";
 
+// Titles and subtitles for each main route
+const pageHeaders: Record<
+  string,
+  { title: string; subtitle: string }
+> = {
+  "/": {
+    title: "Project Dashboard",
+    subtitle: "Overview of your project milestones and capabilities",
+  },
+  "/capabilities": {
+    title: "Capability Management",
+    subtitle: "Manage project capabilities and their details",
+  },
+  "/milestones": {
+    title: "Milestone Management",
+    subtitle: "Track and manage project milestones",
+  },
+  "/roadmap-management": {
+    title: "Roadmap Management",
+    subtitle: "Plan and manage capability roadmaps with version history",
+  },
+  "/roadmap-view": {
+    title: "Roadmap View",
+    subtitle: "Visualize capability timelines and progress",
+  },
+  "/settings": {
+    title: "Settings",
+    subtitle: "Update your application configuration",
+  },
+};
+
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -18,8 +49,12 @@ const Layout = () => {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
-  // Determine if we are on the milestones page
-  const isMilestonesPage = location.pathname === "/milestones";
+  // Find header based on path
+  // Only match main route exactly, not sub-routes
+  const headerMatch =
+    pageHeaders[
+      Object.keys(pageHeaders).find((r) => r === location.pathname) || ""
+    ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -88,9 +123,9 @@ const Layout = () => {
       {/* Main content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 h-auto min-h-16 px-4 bg-white border-b border-gray-200 lg:px-6 py-2">
-          {/* Left: mobile menu button (shows only on mobile) */}
-          <div className="flex items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-h-16 px-4 bg-white border-b border-gray-200 lg:px-6 py-2">
+          {/* Left: menu + page title+subtitle */}
+          <div className="flex items-center min-w-0">
             <Button
               variant="ghost"
               size="sm"
@@ -99,18 +134,22 @@ const Layout = () => {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString()}
-            </span>
+            {/* Page Title and Subtitle on left if available */}
+            {headerMatch && (
+              <div className="flex flex-col min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate">
+                  {headerMatch.title}
+                </h1>
+                <p className="text-gray-600 text-xs sm:text-sm mt-0.5 truncate">
+                  {headerMatch.subtitle}
+                </p>
+              </div>
+            )}
           </div>
-          {/* Center (for title + subtitle if on milestones page) */}
-          {isMilestonesPage && (
-            <div className="flex flex-col sm:items-start max-w-full">
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">Milestone Management</h1>
-              <p className="text-gray-600 text-xs sm:text-sm mt-0.5">Track and manage project milestones</p>
-            </div>
-          )}
-          {/* Right: Can add controls here if needed */}
+          {/* Right: Date */}
+          <div className="min-w-fit flex-shrink-0 text-right">
+            <span className="text-sm text-gray-500">{new Date().toLocaleDateString()}</span>
+          </div>
         </div>
         <main className="flex-1 px-6 pt-2 pb-6 w-full mx-auto max-w-7xl">
           <Outlet />
@@ -121,4 +160,3 @@ const Layout = () => {
 };
 
 export default Layout;
-

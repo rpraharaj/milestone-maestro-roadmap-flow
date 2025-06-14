@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,13 +36,7 @@ const RoadmapManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Roadmap Management</h1>
-          <p className="text-gray-600 mt-2">Plan and manage capability roadmaps with version history</p>
-        </div>
-      </div>
-
+      {/* Removed page headline/description - now handled by Layout */}
       {/* Search */}
       <Card>
         <CardContent className="p-6">
@@ -221,3 +214,5 @@ const RoadmapManagement = () => {
 };
 
 export default RoadmapManagement;
+
+// --- NOTE: This file is now quite long. You may want to consider refactoring it into smaller components for better maintainability.

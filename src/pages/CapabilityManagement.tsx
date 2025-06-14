@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -69,11 +68,8 @@ const CapabilityManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Capability Management</h1>
-          <p className="text-gray-600 mt-2">Manage project capabilities and their details</p>
-        </div>
+      {/* Removed headline/description - now handled by Layout */}
+      <div className="flex justify-end items-center">
         <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           Add Capability
@@ -215,3 +211,4 @@ const CapabilityManagement = () => {
 
 export default CapabilityManagement;
 
+// --- NOTE: This file is now quite long. You may want to consider refactoring it into smaller components for better maintainability.

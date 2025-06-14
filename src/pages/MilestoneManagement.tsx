@@ -51,7 +51,8 @@ const MilestoneManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Right-aligned add button below header */}
+      {/* Removed page headline/description - now handled by Layout */}
+      {/* Right-aligned add button */}
       <div className="flex justify-end mb-2">
         <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />

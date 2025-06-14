@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar, History, MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays } from "date-fns";
 
-const RoadmapView = () => {
+export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const [selectedCapability, setSelectedCapability] = useState<string | null>(null);
@@ -252,7 +251,4 @@ const RoadmapView = () => {
       )}
     </div>
   );
-};
-
-export default RoadmapView;
-
+}

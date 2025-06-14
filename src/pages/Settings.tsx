@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { Download, Upload, FileText, Database, AlertTriangle } from "lucide-reac
 import { toast } from "@/hooks/use-toast";
 import { AppData } from "@/types";
 
-const Settings = () => {
+export default function Settings() {
   const { exportData, importData, data } = useData();
   const [importText, setImportText] = useState("");
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -340,6 +339,4 @@ const Settings = () => {
       </Card>
     </div>
   );
-};
-
-export default Settings;
+}
