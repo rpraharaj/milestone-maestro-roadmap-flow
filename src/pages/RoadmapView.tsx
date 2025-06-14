@@ -1,5 +1,3 @@
-
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,23 +7,50 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval, differenceInDays
 import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import TimelineFixedColumns from "@/components/roadmap/TimelineFixedColumns";
 import VisualTimeline from "@/components/roadmap/VisualTimeline";
+import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
 import { useRoadmapPlanData } from "@/hooks/useRoadmapPlanData";
 
 const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
 const ROW_HEIGHT = 48;
 
-const columns = [
-  { label: 'Capability', width: 192 },
-  { label: 'RAG', width: 48 },
-  { label: 'Status', width: 112 },
-  { label: 'History', width: 64 },
-];
-
 export default function RoadmapView() {
   const { data, getActiveRoadmapPlan, getRoadmapHistory } = useData();
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
+  const [visibleColumns, setVisibleColumns] = useState({
+    rag: true,
+    status: true,
+    history: true,
+  });
   const now = new Date();
+
+  const handleColumnToggle = (column: 'rag' | 'status' | 'history') => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
+
+  // Calculate dynamic column widths based on visibility
+  const getColumns = () => {
+    const baseColumns = [{ label: 'Capability', width: 192 }];
+    const conditionalColumns = [];
+    
+    if (visibleColumns.rag) {
+      conditionalColumns.push({ label: 'RAG', width: 48 });
+    }
+    if (visibleColumns.status) {
+      conditionalColumns.push({ label: 'Status', width: 112 });
+    }
+    if (visibleColumns.history) {
+      conditionalColumns.push({ label: 'History', width: 64 });
+    }
+    
+    return [...baseColumns, ...conditionalColumns];
+  };
+
+  const columns = getColumns();
+  const dynamicLeftWidth = columns.reduce((sum, col) => sum + col.width, 0);
 
   // Get all plans to determine the full scrollable date range
   const getAllPlanDates = () => {
@@ -177,14 +202,20 @@ export default function RoadmapView() {
       {plansWithCapability.length > 0 ? (
         <Card className="overflow-hidden order-1">
           <CardHeader>
-            <CardTitle className="text-lg">Project Timeline</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Project Timeline</CardTitle>
+              <ColumnVisibilitySettings
+                visibleColumns={visibleColumns}
+                onColumnToggle={handleColumnToggle}
+              />
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex">
               {/* Fixed Columns */}
               <div 
                 className="flex-shrink-0 bg-white border-r border-gray-200"
-                style={{ width: TIMELINE_LEFT_WIDTH }}
+                style={{ width: dynamicLeftWidth }}
               >
                 {/* Header Row */}
                 <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: ROW_HEIGHT }}>
@@ -213,7 +244,7 @@ export default function RoadmapView() {
                     return (
                       <div key={`${capability.id}-${plan.id}`} className="flex border-b border-gray-100" style={{ height: ROW_HEIGHT }}>
                         {/* Capability Name with Version */}
-                        <div className="flex items-center px-3 border-r border-gray-200" style={{ width: columns[0].width }}>
+                        <div className="flex items-center px-3 border-r border-gray-200" style={{ width: columns.find(c => c.label === 'Capability')?.width || 192 }}>
                           <span className="font-medium truncate" title={capability.name}>
                             {capability.name}
                           </span>
@@ -225,38 +256,44 @@ export default function RoadmapView() {
                         </div>
                         
                         {/* RAG Status */}
-                        <div className="flex items-center justify-center border-r border-gray-200" style={{ width: columns[1].width }}>
-                          <span
-                            className={`inline-block h-3 w-3 rounded-full ${
-                              capability.ragStatus === "Red"
-                                ? "bg-red-500"
-                                : capability.ragStatus === "Amber"
-                                ? "bg-amber-400"
-                                : "bg-green-500"
-                            }`}
-                            title={capability.ragStatus}
-                          />
-                        </div>
+                        {visibleColumns.rag && (
+                          <div className="flex items-center justify-center border-r border-gray-200" style={{ width: 48 }}>
+                            <span
+                              className={`inline-block h-3 w-3 rounded-full ${
+                                capability.ragStatus === "Red"
+                                  ? "bg-red-500"
+                                  : capability.ragStatus === "Amber"
+                                  ? "bg-amber-400"
+                                  : "bg-green-500"
+                              }`}
+                              title={capability.ragStatus}
+                            />
+                          </div>
+                        )}
                         
                         {/* Status */}
-                        <div className="flex items-center px-3 text-xs text-gray-600 border-r border-gray-200" style={{ width: columns[2].width }}>
-                          {capability.status}
-                        </div>
+                        {visibleColumns.status && (
+                          <div className="flex items-center px-3 text-xs text-gray-600 border-r border-gray-200" style={{ width: 112 }}>
+                            {capability.status}
+                          </div>
+                        )}
                         
                         {/* History Toggle */}
-                        <div className="flex items-center justify-center" style={{ width: columns[3].width }}>
-                          {isActive && hasHistory && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => toggleHistory(capability.id)}
-                              className="h-8 w-8 p-0"
-                              title={showHistory[capability.id] ? "Hide History" : "Show History"}
-                            >
-                              <History className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        {visibleColumns.history && (
+                          <div className="flex items-center justify-center" style={{ width: 64 }}>
+                            {isActive && hasHistory && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleHistory(capability.id)}
+                                className="h-8 w-8 p-0"
+                                title={showHistory[capability.id] ? "Hide History" : "Show History"}
+                              >
+                                <History className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   });
@@ -359,4 +396,3 @@ export default function RoadmapView() {
     </div>
   );
 }
-
