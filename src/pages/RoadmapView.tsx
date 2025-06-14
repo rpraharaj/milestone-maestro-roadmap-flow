@@ -1,4 +1,5 @@
 
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,7 @@ export default function RoadmapView() {
   const [showHistory, setShowHistory] = useState<Record<string, boolean>>({});
   const now = new Date();
 
-  // Get all plans to determine the actual date range needed
+  // Get all plans to determine the full scrollable date range
   const getAllPlanDates = () => {
     const dates: Date[] = [];
     data.capabilities.forEach((cap) => {
@@ -71,8 +72,8 @@ export default function RoadmapView() {
     return dates;
   };
 
-  // Calculate timeline bounds based on actual plan dates
-  const calculateTimelineBounds = () => {
+  // Calculate the full scrollable timeline bounds
+  const calculateFullTimelineBounds = () => {
     const allPlanDates = getAllPlanDates();
     
     // Default timeline: 1 month before, 11 after current date
@@ -94,8 +95,15 @@ export default function RoadmapView() {
     return { timelineStart, timelineEnd };
   };
 
-  const { timelineStart, timelineEnd } = calculateTimelineBounds();
-  const headerMonths = eachMonthOfInterval({ start: timelineStart, end: timelineEnd });
+  // Default visible timeline (what user sees initially)
+  const defaultVisibleStart = startOfMonth(subMonths(now, 1));
+  const defaultVisibleEnd = endOfMonth(addMonths(now, 11));
+  
+  // Full scrollable timeline (includes all historical data)
+  const { timelineStart: fullTimelineStart, timelineEnd: fullTimelineEnd } = calculateFullTimelineBounds();
+  
+  // Use full timeline for calculations but default view for initial display
+  const headerMonths = eachMonthOfInterval({ start: fullTimelineStart, end: fullTimelineEnd });
   const timelineContentWidth = headerMonths.length * MONTH_WIDTH;
 
   const toggleHistory = (capabilityId: string) => {
@@ -134,14 +142,14 @@ export default function RoadmapView() {
   }
 
   const getPhasePosition = (startDate: Date, endDate: Date) => {
-    const clampedStart = dateMax([startDate, timelineStart]);
-    const clampedEnd = dateMin([endDate, timelineEnd]);
+    const clampedStart = dateMax([startDate, fullTimelineStart]);
+    const clampedEnd = dateMin([endDate, fullTimelineEnd]);
     if (clampedEnd < clampedStart) {
       return { left: "0%", width: "0%" };
     }
-    const startOffset = differenceInDays(clampedStart, timelineStart);
+    const startOffset = differenceInDays(clampedStart, fullTimelineStart);
     const duration = differenceInDays(clampedEnd, clampedStart);
-    const totalDays = differenceInDays(timelineEnd, timelineStart);
+    const totalDays = differenceInDays(fullTimelineEnd, fullTimelineStart);
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
     return {
@@ -332,3 +340,4 @@ export default function RoadmapView() {
     </div>
   );
 }
+
