@@ -136,7 +136,7 @@ const Index = () => {
   };
 
   const timelineBounds = getTimelineBounds();
-  const MONTH_WIDTH = 120;
+  const MONTH_WIDTH = 100;
   
   const getPhasePosition = (startDate: Date, endDate: Date) => {
     if (!timelineBounds) return { left: '0%', width: '0%' };
@@ -190,54 +190,56 @@ const Index = () => {
       </div>
 
       {/* Project Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Target className="h-5 w-5" />
             Project Timeline
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {capabilitiesWithPlans.length === 0 ? (
             <p className="text-gray-500 text-center py-8">No capabilities with roadmap plans found</p>
           ) : (
-            <div className="space-y-4">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="flex">
                 {/* Fixed capability info column */}
-                <div className="w-64 flex-shrink-0 pr-4">
-                  <div className="h-12 flex items-center justify-center border-b border-gray-200 bg-gray-50 font-medium text-gray-700">
-                    Capability
+                <div className="w-56 flex-shrink-0 bg-gray-50 border-r border-gray-200">
+                  <div className="h-9 flex items-center px-4 border-b border-gray-200 bg-gray-100">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      Capability
+                    </span>
                   </div>
                   {capabilitiesWithPlans.map(({ capability }) => (
-                    <div key={capability.id} className="h-16 flex flex-col justify-center p-3 border-b border-gray-100">
-                      <h3 className="font-medium text-gray-900 truncate text-sm">
+                    <div key={capability.id} className="h-10 flex items-center px-4 border-b border-gray-100 last:border-b-0">
+                      <span className="font-medium text-gray-900 truncate text-sm" title={capability.name}>
                         {capability.name}
-                      </h3>
+                      </span>
                     </div>
                   ))}
                 </div>
 
                 {/* Scrollable timeline area */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 bg-white">
                   <ScrollArea className="w-full">
                     <div style={{ width: `${timelineContentWidth}px` }}>
                       {/* Timeline header with months */}
-                      <div className="h-12 flex border-b border-gray-200 bg-gray-50">
+                      <div className="h-9 flex border-b border-gray-200 bg-gray-50">
                         {months.map((month) => (
                           <div
                             key={month.toISOString()}
-                            className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
+                            className="text-center text-xs font-medium text-gray-600 border-l border-gray-200 first:border-l-0 flex items-center justify-center"
                             style={{ minWidth: `${MONTH_WIDTH}px`, width: `${MONTH_WIDTH}px` }}
                           >
-                            {format(month, "MMM yyyy")}
+                            {format(month, "MMM yy")}
                           </div>
                         ))}
                       </div>
 
                       {/* Timeline bars for each capability */}
                       {capabilitiesWithPlans.map(({ capability, plan }) => (
-                        <div key={capability.id} className="h-16 border-b border-gray-100 flex items-center">
-                          <div className="relative w-full h-8">
+                        <div key={capability.id} className="h-10 border-b border-gray-100 last:border-b-0 flex items-center px-2">
+                          <div className="relative w-full h-5">
                             {phases.map((phase) => {
                               const startDate = plan![phase.startField] as Date;
                               const endDate = plan![phase.endField] as Date;
@@ -246,15 +248,15 @@ const Index = () => {
                               return (
                                 <div
                                   key={phase.key}
-                                  className={`absolute h-6 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                                  className={`absolute h-4 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group`}
                                   style={{
                                     left: position.left,
                                     width: position.width,
-                                    top: '4px',
+                                    top: '2px',
                                   }}
                                   title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                                 >
-                                  <div className="text-xs text-white font-medium px-2 truncate">
+                                  <div className="text-xs text-white font-medium px-1 truncate leading-4 opacity-90 group-hover:opacity-100">
                                     {phase.label}
                                   </div>
                                 </div>
