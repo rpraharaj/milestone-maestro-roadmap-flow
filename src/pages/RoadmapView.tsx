@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,17 +72,22 @@ export default function RoadmapView() {
     };
   };
 
-  // Scroll to today on mount for timeline (for timeline section only)
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  // Use a single ref for the scroll area (months header and rows will sync scrolling)
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to current month (so that today is roughly in middle) on mount
   useEffect(() => {
-    if (!scrollAreaRef.current) return;
+    if (!timelineScrollRef.current) return;
     const currentMonthIndex = contentMonths.findIndex(m =>
       m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth()
     );
     const scrollToPx = Math.max(0, (currentMonthIndex - 3) * MONTH_WIDTH);
-    scrollAreaRef.current.scrollLeft = scrollToPx;
+    timelineScrollRef.current.scrollLeft = scrollToPx;
   }, [now, contentMonths.length]);
 
+  // Sync the header (months row) and content horizontal scroll
+  // (We only need one scrollable container for both)
+  
   const phases = [
     { key: 'requirement', label: 'REQ', color: 'bg-blue-500', startField: 'requirementStartDate', endField: 'requirementEndDate' },
     { key: 'design', label: 'DES', color: 'bg-purple-500', startField: 'designStartDate', endField: 'designEndDate' },
@@ -107,46 +111,23 @@ export default function RoadmapView() {
             <CardTitle className="text-lg">Project Timeline</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Header: flex row, left fixed columns header, right months header (scrollable) */}
-            <div className="flex border-b bg-gray-50 sticky top-0 z-10">
-              {/* Fixed columns header */}
-              <div className="flex" style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}>
-                {columns.map(col => (
-                  <div
-                    key={col.label}
-                    className="text-sm font-medium text-gray-600 flex items-center border-r border-gray-200 px-3"
-                    style={{ minWidth: col.width, maxWidth: col.width, width: col.width, height: 48 }}
-                  >
-                    {col.label}
-                  </div>
-                ))}
-              </div>
-              {/* Timeline months (header) */}
-              <div className="flex-1 min-w-0 overflow-x-auto" style={{}}>
-                <div
-                  className="flex"
-                  style={{ minWidth: `${timelineContentWidth}px`, width: `${timelineContentWidth}px`, height: 48 }}
-                >
-                  {contentMonths.map(month => (
+            {/* Big flex row: left columns fixed, right timeline horizontally scrollable */}
+            <div className="flex w-full">
+              {/* Fixed left columns (header + rows) */}
+              <div className="z-10 bg-white border-r border-gray-200" style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}>
+                {/* Header */}
+                <div className="flex">
+                  {columns.map(col => (
                     <div
-                      key={month.toISOString()}
-                      className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center"
-                      style={{
-                        minWidth: `${MONTH_WIDTH}px`,
-                        width: `${MONTH_WIDTH}px`,
-                        height: 48
-                      }}
+                      key={col.label}
+                      className="text-sm font-medium text-gray-600 flex items-center border-r last:border-r-0 border-gray-200 px-3"
+                      style={{ minWidth: col.width, maxWidth: col.width, width: col.width, height: 48 }}
                     >
-                      {format(month, "MMM yyyy")}
+                      {col.label}
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-            {/* Timeline content: fixed left columns (all rows), and timeline scroll area */}
-            <div className="flex" style={{ width: "100%" }}>
-              {/* Fixed columns: render for each capability */}
-              <div className="flex flex-col" style={{ minWidth: TIMELINE_LEFT_WIDTH, maxWidth: TIMELINE_LEFT_WIDTH }}>
+                {/* Rows */}
                 {data.capabilities.map(capability => {
                   const activePlan = getActiveRoadmapPlan(capability.id);
                   const history = getRoadmapHistory(capability.id);
@@ -214,17 +195,35 @@ export default function RoadmapView() {
                   ));
                 })}
               </div>
-              {/* Timeline: horizontally scrollable */}
-              <div
-                style={{
-                  minWidth: 0,
-                  width: "100%",
-                  overflowX: "auto",
-                  maxWidth: `calc(100% - ${TIMELINE_LEFT_WIDTH}px)`,
-                }}
-                ref={scrollAreaRef}
-              >
-                <div>
+              {/* Scrollable timeline area (header for months + plan bars) */}
+              <div className="flex-1 min-w-0 relative">
+                {/* Timeline header and rows should scroll together (wrap in scrollable div) */}
+                <div
+                  className="overflow-x-auto"
+                  style={{
+                    minWidth: "100px",
+                    maxWidth: "100%",
+                  }}
+                  ref={timelineScrollRef}
+                  tabIndex={0} // for keyboard access
+                >
+                  {/* Timeline months (header row) */}
+                  <div className="flex" style={{ minWidth: `${timelineContentWidth}px`, width: `${timelineContentWidth}px`, height: 48 }}>
+                    {contentMonths.map(month => (
+                      <div
+                        key={month.toISOString()}
+                        className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center bg-gray-50"
+                        style={{
+                          minWidth: `${MONTH_WIDTH}px`,
+                          width: `${MONTH_WIDTH}px`,
+                          height: 48
+                        }}
+                      >
+                        {format(month, "MMM yyyy")}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Timeline content (plan bars), for each visible capability+plan */}
                   {data.capabilities.map(capability => {
                     const activePlan = getActiveRoadmapPlan(capability.id);
                     const history = getRoadmapHistory(capability.id);
