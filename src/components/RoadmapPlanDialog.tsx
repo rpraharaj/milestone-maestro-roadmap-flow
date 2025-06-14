@@ -44,6 +44,9 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
 
   useEffect(() => {
     if (capabilityId && isOpen) {
+      // Clear validation errors when dialog opens
+      setValidationErrors({});
+      
       const existingPlan = getActiveRoadmapPlan(capabilityId);
       if (existingPlan) {
         setFormData({
@@ -74,6 +77,11 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
           uatEndDate: new Date(today.getTime() + 150 * 24 * 60 * 60 * 1000), // +150 days
         });
       }
+    }
+    
+    // Clear validation errors when dialog closes
+    if (!isOpen) {
+      setValidationErrors({});
     }
   }, [capabilityId, isOpen, getActiveRoadmapPlan]);
 
@@ -145,23 +153,10 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
       const newFormData = { ...formData, [field]: date };
       setFormData(newFormData);
       
-      // Clear validation errors for this field and related fields
-      const newErrors = { ...validationErrors };
-      delete newErrors[field];
-      
-      // If this is a start date, clear the related end date error
-      if (field.includes('Start')) {
-        const endField = field.replace('Start', 'End');
-        delete newErrors[endField];
-      }
-      
-      // If this is an end date, clear the related start date error
-      if (field.includes('End')) {
-        const startField = field.replace('End', 'Start');
-        delete newErrors[startField];
-      }
-      
+      // Run validation on the new form data to update errors dynamically
+      const newErrors = validateDates(newFormData);
       setValidationErrors(newErrors);
+      
       setOpenCalendars(prev => ({ ...prev, [field]: false }));
     }
   };
@@ -224,7 +219,6 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           mode="single"
                           selected={formData[phase.startField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
-                          defaultMonth={formData[phase.startField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
@@ -253,7 +247,6 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           mode="single"
                           selected={formData[phase.endField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
-                          defaultMonth={formData[phase.endField as keyof typeof formData]}
                           initialFocus
                         />
                       </PopoverContent>
