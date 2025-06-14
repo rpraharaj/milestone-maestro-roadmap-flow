@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { useData } from "@/contexts/DataContext";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, History, Plus, Edit, Trash2 } from "lucide-react";
@@ -81,42 +82,42 @@ const RoadmapManagement = () => {
     <TableRow
       key={plan.id + (versionLabel || "active")}
       className={classNames(
-        "transition-shadow group",
+        "transition-all duration-200 border-b",
         faded
-          ? "bg-gray-50"
-          : "hover:bg-blue-50/80 hover:shadow",
-        versionLabel && "border-l-4 border-blue-200"
+          ? "bg-gray-50/50 text-gray-600"
+          : "hover:bg-blue-50/50 hover:shadow-sm",
+        versionLabel && "border-l-2 border-blue-300"
       )}
     >
-      <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/90 min-w-[180px] !pl-2">
-        {cap.name}
+      <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/95 backdrop-blur-sm min-w-[160px] py-2 px-3">
+        <span className="truncate">{cap.name}</span>
         {versionLabel && (
           <Badge
             variant="outline"
-            className="ml-2 text-xs border-blue-400 bg-blue-50 text-blue-700"
+            className="text-xs border-blue-400 bg-blue-50 text-blue-700 px-1.5 py-0.5"
           >
             {versionLabel}
           </Badge>
         )}
       </TableCell>
       {DATE_FIELDS.map((field) => (
-        <TableCell key={field.key} className="text-center">
+        <TableCell key={field.key} className="text-center text-sm py-2 px-2">
           {plan[field.key] && plan[field.key] instanceof Date
-            ? format(plan[field.key], "MMM dd, yyyy")
+            ? format(plan[field.key], "MMM dd")
             : "-"}
         </TableCell>
       ))}
-      <TableCell className="text-center">
+      <TableCell className="text-center py-2 px-2">
         {plan && (
-          <div className="flex flex-wrap gap-2 items-center justify-center">
+          <div className="flex flex-row gap-1 items-center justify-center">
             {!versionLabel && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => openCreatePlan(cap.id)}
-                className="px-2"
+                className="h-7 px-2 text-xs"
               >
-                <Edit className="h-4 w-4 mr-1" /> Edit
+                <Edit className="h-3 w-3 mr-1" /> Edit
               </Button>
             )}
             <AlertDialog>
@@ -124,9 +125,9 @@ const RoadmapManagement = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
+                  <Trash2 className="h-3 w-3 mr-1" />
                   Delete
                 </Button>
               </AlertDialogTrigger>
@@ -155,14 +156,14 @@ const RoadmapManagement = () => {
                 size="sm"
                 onClick={() => toggleHistory(cap.id)}
                 className={classNames(
-                  "px-2",
+                  "h-7 px-2 text-xs",
                   showHistory === cap.id
-                    ? "ring-2 ring-blue-200"
+                    ? "ring-1 ring-blue-300"
                     : ""
                 )}
               >
-                <History className="h-4 w-4 mr-1" />
-                {showHistory === cap.id ? "Hide" : "Show"} History
+                <History className="h-3 w-3 mr-1" />
+                {showHistory === cap.id ? "Hide" : "History"}
               </Button>
             )}
           </div>
@@ -172,48 +173,67 @@ const RoadmapManagement = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold text-gray-900">Roadmap Management</h1>
+        <p className="text-sm text-gray-600">Manage capability roadmap plans and view historical versions</p>
+      </div>
+
       {/* Search filter */}
-      <Card className="shadow-sm border border-gray-200">
-        <CardContent className="p-5 flex items-center gap-2 bg-gray-50 rounded-t-lg">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search capabilities..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 rounded-md ring-1 ring-gray-200"
-            />
+      <Card className="shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search capabilities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setSearchTerm("")}
+              size="sm"
+              className="h-9"
+            >
+              Clear
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => setSearchTerm("")}
-            className="ml-2"
-            size="sm"
-          >
-            Clear
-          </Button>
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg border border-gray-200 overflow-hidden">
-        <CardContent className="px-2 py-0">
-          <div className="overflow-x-auto">
+      {/* Main table */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Capability Plans</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto border-t">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="sticky left-0 bg-gray-50 z-20 min-w-[180px] border-r">Capability</TableHead>
+                <TableRow className="bg-gray-50/80 hover:bg-gray-50/80">
+                  <TableHead className="sticky left-0 bg-gray-50/90 backdrop-blur-sm z-20 min-w-[160px] border-r font-semibold text-gray-700 py-3">
+                    Capability
+                  </TableHead>
                   {DATE_FIELDS.map((field) => (
-                    <TableHead key={field.key} className="text-center">{field.label}</TableHead>
+                    <TableHead key={field.key} className="text-center font-semibold text-gray-700 py-3 px-2 text-xs">
+                      {field.label}
+                    </TableHead>
                   ))}
-                  <TableHead className="w-48" />
+                  <TableHead className="w-40 text-center font-semibold text-gray-700 py-3">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCapabilities.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={DATE_FIELDS.length + 2} className="text-center py-8 text-gray-400">
-                      No capabilities found.
+                    <TableCell colSpan={DATE_FIELDS.length + 2} className="text-center py-12 text-gray-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="h-8 w-8 text-gray-300" />
+                        <span>No capabilities found</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
@@ -225,20 +245,20 @@ const RoadmapManagement = () => {
                   // Always render a row, even if no plan exists
                   if (!activePlan && history.length === 0) {
                     return (
-                      <TableRow key={cap.id}>
-                        <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/90 min-w-[180px] !pl-2">
-                          {cap.name}
+                      <TableRow key={cap.id} className="hover:bg-gray-50/50">
+                        <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/95 backdrop-blur-sm min-w-[160px] py-2 px-3">
+                          <span className="truncate">{cap.name}</span>
                         </TableCell>
                         {DATE_FIELDS.map((field) => (
-                          <TableCell key={field.key} className="text-center">-</TableCell>
+                          <TableCell key={field.key} className="text-center text-sm py-2 px-2 text-gray-400">-</TableCell>
                         ))}
-                        <TableCell className="text-center">
+                        <TableCell className="text-center py-2 px-2">
                           <Button
                             size="sm"
                             onClick={() => openCreatePlan(cap.id)}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700"
                           >
-                            <Plus className="h-4 w-4 mr-1" />
+                            <Plus className="h-3 w-3 mr-1" />
                             Create Plan
                           </Button>
                         </TableCell>
