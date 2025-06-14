@@ -4,7 +4,6 @@ import { RoadmapPlan, Capability } from "@/types";
 import { addDays, format, isWithinInterval, isSameDay } from "date-fns";
 import classNames from "clsx";
 
-// Define date field keys for RoadmapPlan for extra type safety
 type RoadmapPlanDateField =
   | "requirementStartDate"
   | "requirementEndDate"
@@ -19,7 +18,7 @@ type RoadmapPlanDateField =
 
 interface PhaseRange {
   label: string;
-  color: string; // tailwind color bg
+  color: string;
   start: RoadmapPlanDateField;
   end: RoadmapPlanDateField;
 }
@@ -28,11 +27,11 @@ type Props = {
   capability: Capability;
   plan: RoadmapPlan;
   days: Date[];
-  faded?: boolean; // for history
+  faded?: boolean;
+  isMobile?: boolean;
 };
 
-// Each plan phase will be highlighted with a certain background color.
-const PHASES: { label: string; color: string; start: RoadmapPlanDateField; end: RoadmapPlanDateField }[] = [
+const PHASES: PhaseRange[] = [
   {
     label: "Requirements",
     color: "bg-blue-200",
@@ -65,13 +64,10 @@ const PHASES: { label: string; color: string; start: RoadmapPlanDateField; end: 
   }
 ];
 
-// Determine for a given day if it's in a phase, and which one
 function getPhaseForDay(plan: RoadmapPlan, day: Date) {
   for (let phase of PHASES) {
-    // Add runtime check in addition to the static type
     const start = plan[phase.start];
     const end = plan[phase.end];
-    // Make sure start and end are Dates before passing to isWithinInterval
     if (start instanceof Date && end instanceof Date) {
       if (
         isWithinInterval(day, {
@@ -86,27 +82,65 @@ function getPhaseForDay(plan: RoadmapPlan, day: Date) {
   return null;
 }
 
-const RoadmapTimelineRow: React.FC<Props> = ({ capability, plan, days, faded }) => {
+const RoadmapTimelineRow: React.FC<Props> = ({ 
+  capability, 
+  plan, 
+  days, 
+  faded, 
+  isMobile = false 
+}) => {
   return (
-    <tr className={classNames(faded ? "opacity-60" : "bg-white hover:bg-gray-50", "transition-colors")}>
-      <td className="whitespace-nowrap font-medium px-2 py-1 border-r border-gray-200 text-sm">
-        {capability.name}
-        {plan.version > 1 && (
-          <span className="ml-2 text-xs text-gray-400 align-middle">v{plan.version}</span>
-        )}
+    <tr className={classNames(
+      "transition-colors border-b border-gray-100",
+      faded ? "opacity-60" : "bg-white hover:bg-gray-50",
+      isMobile && "h-16"
+    )}>
+      <td className={classNames(
+        "whitespace-nowrap font-medium border-r border-gray-200 sticky left-0 bg-white z-10",
+        isMobile ? "px-3 py-2 text-sm" : "px-2 py-1 text-sm"
+      )}>
+        <div className="flex flex-col">
+          <span className={classNames(
+            "truncate",
+            isMobile ? "max-w-[160px]" : "max-w-[120px]"
+          )} title={capability.name}>
+            {capability.name}
+          </span>
+          {plan.version > 1 && (
+            <span className="text-xs text-gray-400 mt-0.5">
+              v{plan.version}
+            </span>
+          )}
+        </div>
       </td>
       {days.map((day, idx) => {
         const phase = getPhaseForDay(plan, day);
-        let cellClasses = "border border-gray-100 px-1 py-1 transition-all";
+        const isToday = isSameDay(day, new Date());
+        
+        let cellClasses = classNames(
+          "border border-gray-100 transition-all relative",
+          isMobile ? "px-2 py-2 min-w-[60px]" : "px-1 py-1"
+        );
+        
         if (phase) {
-          cellClasses += ` ${phase.color} `;
+          cellClasses += ` ${phase.color}`;
         }
-        if (isSameDay(day, new Date())) {
-          cellClasses += " ring-2 ring-blue-400";
+        
+        if (isToday) {
+          cellClasses += " ring-2 ring-blue-400 ring-inset";
         }
+        
         return (
           <td key={idx} className={cellClasses}>
-            &nbsp;
+            {/* Mobile: Show phase label on hover/touch */}
+            {isMobile && phase && (
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black bg-opacity-75 text-white text-xs transition-opacity pointer-events-none">
+                {phase.label}
+              </div>
+            )}
+            <div className={isMobile ? "h-4" : "h-2"}>
+              &nbsp;
+            </div>
           </td>
         );
       })}
@@ -115,4 +149,3 @@ const RoadmapTimelineRow: React.FC<Props> = ({ capability, plan, days, faded }) 
 };
 
 export default RoadmapTimelineRow;
-

@@ -50,7 +50,6 @@ const Layout = () => {
   ];
 
   // Find header based on path
-  // Only match main route exactly, not sub-routes
   const headerMatch =
     pageHeaders[
       Object.keys(pageHeaders).find((r) => r === location.pathname) || ""
@@ -58,7 +57,6 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-      {/* Sidebar: overlays on mobile, shows as static on desktop */}
       {/* Mobile Sidebar Backdrop */}
       <div
         className={cn(
@@ -67,7 +65,8 @@ const Layout = () => {
         )}
         onClick={() => setSidebarOpen(false)}
       />
-      {/* Sidebar */}
+      
+      {/* Enhanced Sidebar for mobile */}
       <aside
         className={cn(
           "z-50 flex-shrink-0 bg-white shadow-lg transition-transform duration-300 ease-in-out flex flex-col",
@@ -86,10 +85,10 @@ const Layout = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
+            className="lg:hidden h-10 w-10"
             onClick={() => setSidebarOpen(false)}
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </div>
         <nav className="mt-8 flex-1 overflow-y-auto">
@@ -101,39 +100,39 @@ const Layout = () => {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                    "group flex items-center px-3 py-3 text-base font-medium rounded-md transition-colors touch-manipulation",
+                    "lg:px-2 lg:py-2 lg:text-sm",
                     location.pathname === item.href
                       ? "bg-gray-100 text-gray-900"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                    sidebarCollapsed && "justify-center"
+                    sidebarCollapsed && "justify-center lg:py-2"
                   )}
                   onClick={() => setSidebarOpen(false)}
                   title={sidebarCollapsed ? item.name : undefined}
                 >
                   <Icon
                     className={cn(
-                      "mr-3 h-5 w-5 transition-all",
+                      "mr-3 h-6 w-6 transition-all lg:h-5 lg:w-5",
                       location.pathname === item.href
                         ? "text-gray-500"
                         : "text-gray-400 group-hover:text-gray-500",
-                      sidebarCollapsed ? "mr-0" : "mr-3"
+                      sidebarCollapsed ? "mr-0" : "mr-3 lg:mr-3"
                     )}
                   />
-                  {/* Only show text if sidebar expanded */}
                   {!sidebarCollapsed && item.name}
                 </Link>
               );
             })}
           </div>
         </nav>
-        {/* Expand/Collapse Button at bottom */}
+        {/* Enhanced collapse button for mobile */}
         <div className="mt-auto pb-4 flex justify-center">
           <Button
             variant="ghost"
             size="icon"
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setSidebarCollapsed((v) => !v)}
-            className="rounded-full border"
+            className="rounded-full border h-10 w-10 lg:h-8 lg:w-8"
           >
             {sidebarCollapsed ? (
               <ChevronRight className="w-5 h-5" />
@@ -146,36 +145,33 @@ const Layout = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-h-16 px-4 bg-white border-b border-gray-200 lg:px-6 py-2">
-          {/* Left: menu + page title+subtitle */}
+        {/* Enhanced Header for mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-h-16 px-4 bg-white border-b border-gray-200 lg:px-6 py-3 lg:py-2">
           <div className="flex items-center min-w-0">
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden mr-3"
+              className="lg:hidden mr-3 h-10 w-10 p-0"
               onClick={() => setSidebarOpen(true)}
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             </Button>
-            {/* Page Title and Subtitle on left if available */}
             {headerMatch && (
               <div className="flex flex-col min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate">
+                <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate lg:text-xl">
                   {headerMatch.title}
                 </h1>
-                <p className="text-gray-600 text-xs sm:text-sm mt-0.5 truncate">
+                <p className="text-gray-600 text-sm mt-0.5 truncate lg:text-xs">
                   {headerMatch.subtitle}
                 </p>
               </div>
             )}
           </div>
-          {/* Right: Date */}
           <div className="min-w-fit flex-shrink-0 text-right">
             <span className="text-sm text-gray-500">{new Date().toLocaleDateString()}</span>
           </div>
         </div>
-        <main className="flex-1 px-6 pt-2 pb-6 w-full mx-auto max-w-7xl">
+        <main className="flex-1 px-4 pt-2 pb-6 w-full mx-auto max-w-7xl lg:px-6">
           <Outlet />
         </main>
       </div>
