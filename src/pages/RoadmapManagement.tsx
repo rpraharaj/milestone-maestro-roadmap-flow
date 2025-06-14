@@ -4,7 +4,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, History, Plus, Edit, ArrowUpRight } from "lucide-react";
+import { Search, History, Plus, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import RoadmapPlanDialog from "@/components/RoadmapPlanDialog";
 import { format } from "date-fns";
@@ -49,6 +49,88 @@ const RoadmapManagement = () => {
   const toggleHistory = (cid: string) => {
     setShowHistory(showHistory === cid ? null : cid);
   };
+
+  /** Only pass the expected props to <TableRow> and use versionLabel/faded as option flags */
+  const renderPlanRow = (
+    cap,
+    plan,
+    {
+      faded = false,
+      versionLabel = null,
+    }: { faded?: boolean; versionLabel?: string | null } = {}
+  ) => (
+    <TableRow
+      key={plan.id + (versionLabel || "active")}
+      className={classNames(
+        "transition-shadow group",
+        faded
+          ? "bg-gray-50"
+          : "hover:bg-blue-50/80 hover:shadow",
+        versionLabel && "border-l-4 border-blue-200"
+      )}
+    >
+      <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/90 min-w-[180px] !pl-2">
+        {cap.name}
+        {versionLabel && (
+          <Badge
+            variant="outline"
+            className="ml-2 text-xs border-blue-400 bg-blue-50 text-blue-700"
+          >
+            {versionLabel}
+          </Badge>
+        )}
+      </TableCell>
+      {DATE_FIELDS.map((field) => (
+        <TableCell key={field.key} className="text-center">
+          {plan[field.key] && plan[field.key] instanceof Date
+            ? format(plan[field.key], "MMM dd, yyyy")
+            : "-"}
+        </TableCell>
+      ))}
+      <TableCell className="text-center">
+        {!versionLabel && (
+          plan
+            ? (
+              <div className="flex flex-wrap gap-2 items-center justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openCreatePlan(cap.id)}
+                  className="px-2"
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+                {getRoadmapHistory(cap.id).length > 1 && (
+                  <Button
+                    variant={showHistory === cap.id ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => toggleHistory(cap.id)}
+                    className={classNames(
+                      "px-2",
+                      showHistory === cap.id
+                        ? "ring-2 ring-blue-200"
+                        : ""
+                    )}
+                  >
+                    <History className="h-4 w-4 mr-1" />
+                    {showHistory === cap.id ? "Hide" : "Show"} History
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => openCreatePlan(cap.id)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Create Plan
+              </Button>
+            )
+        )}
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <div className="space-y-6">
@@ -101,91 +183,36 @@ const RoadmapManagement = () => {
                   const history = getRoadmapHistory(cap.id);
                   const showingHistory = showHistory === cap.id && history.length > 1;
 
-                  if (!activePlan && history.length === 0) return null;
-
-                  const renderPlanRow = (
-                    plan,
-                    options: { faded?: boolean; versionLabel?: string } = {}
-                  ) => (
-                    <TableRow
-                      key={plan.id + (options.versionLabel || "active")}
-                      className={classNames(
-                        "transition-shadow group",
-                        options.faded
-                          ? "bg-gray-50"
-                          : "hover:bg-blue-50/80 hover:shadow",
-                        options.versionLabel && "border-l-4 border-blue-200"
-                      )}
-                    >
-                      <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/90 min-w-[180px] !pl-2">
-                        {cap.name}
-                        {options.versionLabel && (
-                          <Badge
-                            variant="outline"
-                            className="ml-2 text-xs border-blue-400 bg-blue-50 text-blue-700"
-                          >
-                            {options.versionLabel}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      {DATE_FIELDS.map((field) => (
-                        <TableCell key={field.key} className="text-center">
-                          {plan[field.key] && plan[field.key] instanceof Date
-                            ? format(plan[field.key], "MMM dd, yyyy")
-                            : "-"}
+                  // Always render a row, even if no plan exists
+                  if (!activePlan && history.length === 0) {
+                    return (
+                      <TableRow key={cap.id}>
+                        <TableCell className="font-medium flex flex-row gap-2 items-center sticky left-0 z-10 bg-white/90 min-w-[180px] !pl-2">
+                          {cap.name}
                         </TableCell>
-                      ))}
-                      <TableCell className="text-center">
-                        {!options.versionLabel && (
-                          activePlan
-                            ? (
-                              <div className="flex flex-wrap gap-2 items-center justify-center">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openCreatePlan(cap.id)}
-                                  className="px-2"
-                                >
-                                  <Edit className="h-4 w-4 mr-1" /> Edit
-                                </Button>
-                                {history.length > 1 && (
-                                  <Button
-                                    variant={showingHistory ? "secondary" : "outline"}
-                                    size="sm"
-                                    onClick={() => toggleHistory(cap.id)}
-                                    className={classNames(
-                                      "px-2",
-                                      showingHistory
-                                        ? "ring-2 ring-blue-200"
-                                        : ""
-                                    )}
-                                  >
-                                    <History className="h-4 w-4 mr-1" />
-                                    {showingHistory ? "Hide" : "Show"} History
-                                  </Button>
-                                )}
-                              </div>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => openCreatePlan(cap.id)}
-                                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Create Plan
-                              </Button>
-                            )
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
+                        {DATE_FIELDS.map((field) => (
+                          <TableCell key={field.key} className="text-center">-</TableCell>
+                        ))}
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            onClick={() => openCreatePlan(cap.id)}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Create Plan
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
 
                   return (
                     <React.Fragment key={cap.id}>
-                      {activePlan && renderPlanRow(activePlan)}
+                      {activePlan && renderPlanRow(cap, activePlan)}
                       {showingHistory &&
                         history.slice(1).map((plan) =>
-                          renderPlanRow(plan, {
+                          renderPlanRow(cap, plan, {
                             faded: true,
                             versionLabel: `v${plan.version}`,
                           })
