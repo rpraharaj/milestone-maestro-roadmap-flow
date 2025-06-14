@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,37 @@ const CapabilityManagement = () => {
     });
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      
+      if (char === '"' && !inQuotes) {
+        inQuotes = true;
+      } else if (char === '"' && inQuotes) {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = false;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+      i++;
+    }
+    
+    result.push(current.trim());
+    return result;
+  };
+
   const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -90,48 +122,90 @@ const CapabilityManagement = () => {
     reader.onload = (e) => {
       try {
         const csv = e.target?.result as string;
-        const lines = csv.split('\n');
-        const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+        const lines = csv.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          throw new Error('CSV file must contain at least a header row and one data row.');
+        }
+
+        const headers = parseCSVLine(lines[0]);
         
         // Validate headers
         const expectedHeaders = ['Name', 'Workstream Lead', 'SME', 'BA', 'Milestone', 'Status', 'RAG Status', 'Notes'];
         if (!expectedHeaders.every(header => headers.includes(header))) {
-          throw new Error('Invalid CSV format. Please ensure headers match the export format.');
+          throw new Error('Invalid CSV format. Please ensure headers match the export format: ' + expectedHeaders.join(', '));
         }
 
         let importCount = 0;
+        const errors: string[] = [];
+
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
 
-          const values = line.split(',').map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
-          
-          if (values.length >= 8) {
+          try {
+            const values = parseCSVLine(line);
+            
+            if (values.length < 8) {
+              errors.push(`Row ${i + 1}: Not enough columns (expected 8, got ${values.length})`);
+              continue;
+            }
+
             const capability = {
-              name: values[0],
-              workstreamLead: values[1],
-              sme: values[2],
-              ba: values[3],
-              milestone: values[4],
+              name: values[0] || '',
+              workstreamLead: values[1] || '',
+              sme: values[2] || '',
+              ba: values[3] || '',
+              milestone: values[4] || '',
               status: values[5] as Capability['status'],
               ragStatus: values[6] as Capability['ragStatus'],
-              notes: values[7],
+              notes: values[7] || '',
             };
 
-            // Validate required fields and enum values
-            if (capability.name && capability.workstreamLead && capability.sme && capability.ba) {
-              if (['Not Started', 'In Progress', 'Completed', 'On Hold'].includes(capability.status) &&
-                  ['Red', 'Amber', 'Green'].includes(capability.ragStatus)) {
-                addCapability(capability);
-                importCount++;
-              }
+            // Validate required fields
+            if (!capability.name.trim()) {
+              errors.push(`Row ${i + 1}: Name is required`);
+              continue;
             }
+            if (!capability.workstreamLead.trim()) {
+              errors.push(`Row ${i + 1}: Workstream Lead is required`);
+              continue;
+            }
+            if (!capability.sme.trim()) {
+              errors.push(`Row ${i + 1}: SME is required`);
+              continue;
+            }
+            if (!capability.ba.trim()) {
+              errors.push(`Row ${i + 1}: BA is required`);
+              continue;
+            }
+
+            // Validate enum values
+            if (!['Not Started', 'In Progress', 'Completed', 'On Hold'].includes(capability.status)) {
+              errors.push(`Row ${i + 1}: Invalid status "${capability.status}". Must be one of: Not Started, In Progress, Completed, On Hold`);
+              continue;
+            }
+
+            if (!['Red', 'Amber', 'Green'].includes(capability.ragStatus)) {
+              errors.push(`Row ${i + 1}: Invalid RAG status "${capability.ragStatus}". Must be one of: Red, Amber, Green`);
+              continue;
+            }
+
+            addCapability(capability);
+            importCount++;
+          } catch (rowError) {
+            errors.push(`Row ${i + 1}: ${rowError instanceof Error ? rowError.message : 'Unknown error'}`);
           }
         }
 
+        if (errors.length > 0) {
+          console.warn('Import errors:', errors);
+        }
+
         toast({
-          title: "Import successful",
-          description: `${importCount} capabilities have been imported.`,
+          title: "Import completed",
+          description: `${importCount} capabilities imported successfully.${errors.length > 0 ? ` ${errors.length} rows had errors.` : ''}`,
+          variant: errors.length > 0 && importCount === 0 ? "destructive" : "default",
         });
       } catch (error) {
         toast({
@@ -328,5 +402,3 @@ const CapabilityManagement = () => {
 };
 
 export default CapabilityManagement;
-
-// --- NOTE: This file is now quite long. You may want to consider refactoring it into smaller components for better maintainability.
