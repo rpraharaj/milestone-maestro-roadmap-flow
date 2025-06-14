@@ -8,7 +8,11 @@ import PhaseLegend from "@/components/roadmap/PhaseLegend";
 import TimelineFixedColumns from "@/components/roadmap/TimelineFixedColumns";
 import VisualTimeline from "@/components/roadmap/VisualTimeline";
 import ColumnVisibilitySettings from "@/components/roadmap/ColumnVisibilitySettings";
+import PDFExport from "@/components/roadmap/PDFExport";
+import PDFExportView from "@/components/roadmap/PDFExportView";
 import { useRoadmapPlanData } from "@/hooks/useRoadmapPlanData";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const TIMELINE_LEFT_WIDTH = 416; // Sum of all column widths
 const MONTH_WIDTH = 120;
@@ -29,6 +33,76 @@ export default function RoadmapView() {
       ...prev,
       [column]: !prev[column]
     }));
+  };
+
+  // Export to PDF function
+  const handleExportPDF = async () => {
+    // Create a temporary container for the PDF export view
+    const exportContainer = document.createElement('div');
+    exportContainer.style.position = 'absolute';
+    exportContainer.style.left = '-9999px';
+    exportContainer.style.top = '0';
+    document.body.appendChild(exportContainer);
+
+    // Create the PDF export view
+    const { timelineStart, timelineEnd } = calculateFullTimelineBounds();
+    
+    try {
+      // Render the PDF export view
+      const { createRoot } = await import('react-dom/client');
+      const root = createRoot(exportContainer);
+      
+      await new Promise<void>((resolve) => {
+        root.render(
+          <PDFExportView
+            capabilities={data.capabilities}
+            getActiveRoadmapPlan={getActiveRoadmapPlan}
+            parsePlanDate={parsePlanDate}
+            phases={phases}
+            timelineStart={timelineStart}
+            timelineEnd={timelineEnd}
+          />
+        );
+        
+        // Wait for render
+        setTimeout(resolve, 1000);
+      });
+
+      // Generate PDF
+      const canvas = await html2canvas(exportContainer.firstChild as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: 1200,
+        height: exportContainer.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / (imgWidth * 0.264583), pdfHeight / (imgHeight * 0.264583));
+      const imgX = (pdfWidth - imgWidth * 0.264583 * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * 0.264583 * ratio, imgHeight * 0.264583 * ratio);
+      pdf.save('roadmap-export.pdf');
+
+      // Cleanup
+      root.unmount();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      document.body.removeChild(exportContainer);
+    }
   };
 
   // Calculate dynamic column widths based on visibility
@@ -204,10 +278,13 @@ export default function RoadmapView() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Project Timeline</CardTitle>
-              <ColumnVisibilitySettings
-                visibleColumns={visibleColumns}
-                onColumnToggle={handleColumnToggle}
-              />
+              <div className="flex items-center gap-2">
+                <PDFExport onExportPDF={handleExportPDF} />
+                <ColumnVisibilitySettings
+                  visibleColumns={visibleColumns}
+                  onColumnToggle={handleColumnToggle}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
