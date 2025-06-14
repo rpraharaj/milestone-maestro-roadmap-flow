@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,6 +87,7 @@ export default function RoadmapView() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex w-full">
+              {/* Fixed columns (always visible on left) */}
               <TimelineFixedColumns
                 capabilities={data.capabilities}
                 getActiveRoadmapPlan={getActiveRoadmapPlan}
@@ -103,19 +103,53 @@ export default function RoadmapView() {
                 columns={columns}
                 rowHeight={48}
               />
-              <VisualTimeline
-                capabilities={data.capabilities}
-                getActiveRoadmapPlan={getActiveRoadmapPlan}
-                getRoadmapHistory={getRoadmapHistory}
-                showHistory={showHistory}
-                phases={phases}
-                visibleTimelineStart={visibleTimelineStart}
-                visibleTimelineEnd={visibleTimelineEnd}
-                timelineContentWidth={timelineContentWidth}
-                MONTH_WIDTH={MONTH_WIDTH}
-                parsePlanDate={parsePlanDate}
-                getPhasePosition={getPhasePosition}
-              />
+              {/* Scrollable timeline (months + plan bars) - right of fixed columns */}
+              <div
+                className="overflow-x-auto flex-1"
+                style={{
+                  minWidth: `${timelineContentWidth}px`,
+                  maxWidth: `calc(100vw - ${TIMELINE_LEFT_WIDTH}px)`,
+                }}
+                tabIndex={0}
+              >
+                {/* Timeline months header */}
+                <div
+                  className="flex"
+                  style={{
+                    minWidth: `${timelineContentWidth}px`,
+                    width: `${timelineContentWidth}px`,
+                    height: 48,
+                  }}
+                >
+                  {contentMonths.map((month) => (
+                    <div
+                      key={month.toISOString()}
+                      className="text-center text-sm font-medium text-gray-600 border-l border-gray-200 flex items-center justify-center bg-gray-50"
+                      style={{
+                        minWidth: `${MONTH_WIDTH}px`,
+                        width: `${MONTH_WIDTH}px`,
+                        height: 48,
+                      }}
+                    >
+                      {format(month, "MMM yyyy")}
+                    </div>
+                  ))}
+                </div>
+                {/* Timeline plan bars */}
+                <VisualTimeline
+                  capabilities={data.capabilities}
+                  getActiveRoadmapPlan={getActiveRoadmapPlan}
+                  getRoadmapHistory={getRoadmapHistory}
+                  showHistory={showHistory}
+                  phases={phases}
+                  visibleTimelineStart={visibleTimelineStart}
+                  visibleTimelineEnd={visibleTimelineEnd}
+                  timelineContentWidth={timelineContentWidth}
+                  MONTH_WIDTH={MONTH_WIDTH}
+                  parsePlanDate={parsePlanDate}
+                  getPhasePosition={getPhasePosition}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
