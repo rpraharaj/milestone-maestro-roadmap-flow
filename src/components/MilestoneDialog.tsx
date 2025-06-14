@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Milestone } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MilestoneDialogProps {
   milestone: Milestone | null;
@@ -29,12 +31,14 @@ interface MilestoneDialogProps {
 
 const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) => {
   const { addMilestone, updateMilestone } = useData();
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState({
     name: "",
     date: new Date(),
     capabilityIds: [] as string[],
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     if (milestone) {
@@ -43,12 +47,14 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
         date: milestone.date,
         capabilityIds: milestone.capabilityIds || [],
       });
+      setCalendarMonth(milestone.date);
     } else {
       setFormData({
         name: "",
         date: new Date(),
         capabilityIds: [],
       });
+      setCalendarMonth(new Date());
     }
   }, [milestone, isOpen]);
 
@@ -86,6 +92,10 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
       setFormData(prev => ({ ...prev, date }));
       setIsCalendarOpen(false);
     }
+  };
+
+  const handleMonthChange = (month: Date) => {
+    setCalendarMonth(month);
   };
 
   return (
@@ -128,11 +138,14 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                 <Calendar
                   mode="single"
                   selected={formData.date}
-                  month={formData.date}
                   onSelect={handleDateSelect}
+                  onMonthChange={handleMonthChange}
+                  month={calendarMonth}
                   initialFocus
-                  numberOfMonths={2}
+                  numberOfMonths={isMobile ? 1 : 2}
                   captionLayout="dropdown"
+                  fromYear={new Date().getFullYear() - 5}
+                  toYear={new Date().getFullYear() + 10}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
