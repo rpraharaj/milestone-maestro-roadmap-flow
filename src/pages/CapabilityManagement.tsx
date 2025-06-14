@@ -1,14 +1,16 @@
-
 import { useState } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Trash2, Target, Download, Upload } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Target, Download, Upload, X } from "lucide-react";
 import CapabilityDialog from "@/components/CapabilityDialog";
 import { Capability } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { CollapsibleFilter } from "@/components/ui/collapsible-filter";
+import { MobileTable } from "@/components/ui/mobile-table";
 import {
   Table,
   TableHeader,
@@ -21,6 +23,7 @@ import {
 const CapabilityManagement = () => {
   const { data, deleteCapability, addCapability } = useData();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCapability, setSelectedCapability] = useState<Capability | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -50,6 +53,91 @@ const CapabilityManagement = () => {
     setSelectedCapability(null);
     setIsDialogOpen(true);
   };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setRagFilter("all");
+  };
+
+  const activeFiltersCount = [
+    searchTerm,
+    statusFilter !== "all" ? statusFilter : null,
+    ragFilter !== "all" ? ragFilter : null,
+  ].filter(Boolean).length;
+
+  // Mobile table configuration
+  const mobileTableColumns = [
+    { key: 'name', label: 'Name', priority: 'high' as const, width: '120px', className: 'font-medium text-sm' },
+    { key: 'status', label: 'Status', priority: 'high' as const, width: '80px' },
+    { key: 'ragStatus', label: 'RAG', priority: 'high' as const, width: '60px' },
+    { key: 'workstreamLead', label: 'Lead', priority: 'medium' as const, width: '100px', hideOnMobile: true },
+    { key: 'milestone', label: 'Milestone', priority: 'medium' as const, width: '100px', hideOnMobile: true },
+    { key: 'sme', label: 'SME', priority: 'low' as const, hideOnMobile: true },
+    { key: 'ba', label: 'BA', priority: 'low' as const, hideOnMobile: true },
+    { key: 'notes', label: 'Notes', priority: 'low' as const, hideOnMobile: true },
+  ];
+
+  const tableData = filteredCapabilities.map(capability => ({
+    ...capability,
+    status: (
+      <Badge className={`${getStatusBadgeColor(capability.status)} text-xs px-1 py-0`}>
+        {capability.status}
+      </Badge>
+    ),
+    ragStatus: (
+      <Badge className={`${getRagBadgeColor(capability.ragStatus)} text-xs px-1 py-0`}>
+        {capability.ragStatus}
+      </Badge>
+    ),
+    milestone: capability.milestone || "-",
+    notes: capability.notes 
+      ? capability.notes.length > 50
+        ? `${capability.notes.substring(0, 50)}...`
+        : capability.notes
+      : "-"
+  }));
+
+  const tableActions = (capability: any) => [
+    {
+      label: "Edit",
+      icon: Edit,
+      onClick: () => handleEdit(capability),
+    },
+    {
+      label: "Delete",
+      icon: Trash2,
+      onClick: () => handleDelete(capability.id),
+      variant: 'destructive' as const,
+    },
+  ];
+
+  const expandedContent = (capability: any) => (
+    <div className="grid grid-cols-1 gap-3">
+      <div className="flex justify-between">
+        <span className="font-medium text-gray-600 text-sm">Workstream Lead:</span>
+        <span className="text-gray-900 text-sm">{capability.workstreamLead}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="font-medium text-gray-600 text-sm">SME:</span>
+        <span className="text-gray-900 text-sm">{capability.sme}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="font-medium text-gray-600 text-sm">BA:</span>
+        <span className="text-gray-900 text-sm">{capability.ba}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="font-medium text-gray-600 text-sm">Milestone:</span>
+        <span className="text-gray-900 text-sm">{capability.milestone || "-"}</span>
+      </div>
+      {capability.notes && (
+        <div className="pt-2 border-t">
+          <span className="font-medium text-gray-600 text-sm block mb-1">Notes:</span>
+          <span className="text-gray-900 text-sm">{capability.notes}</span>
+        </div>
+      )}
+    </div>
+  );
 
   const exportToCSV = () => {
     const headers = ['Name', 'Workstream Lead', 'SME', 'BA', 'Milestone', 'Status', 'RAG Status', 'Notes'];
@@ -258,15 +346,19 @@ const CapabilityManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Action Buttons */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button onClick={exportToCSV} variant="outline" className="bg-green-50 hover:bg-green-100 border-green-200">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
+    <div className="space-y-4">
+      {/* Mobile-optimized Action Buttons */}
+      <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-center'}`}>
+        <div className={`flex gap-2 ${isMobile ? 'order-2' : ''}`}>
+          <Button 
+            onClick={exportToCSV} 
+            variant="outline" 
+            className={`bg-green-50 hover:bg-green-100 border-green-200 ${isMobile ? 'flex-1 text-xs px-2' : ''}`}
+          >
+            <Download className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+            {isMobile ? 'Export' : 'Export CSV'}
           </Button>
-          <div className="relative">
+          <div className="relative flex-1">
             <input
               type="file"
               accept=".csv"
@@ -274,131 +366,162 @@ const CapabilityManagement = () => {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               id="csv-import"
             />
-            <Button variant="outline" className="bg-gray-50 hover:bg-gray-100 border-gray-200">
-              <Upload className="h-4 w-4 mr-2" />
-              Import CSV
+            <Button 
+              variant="outline" 
+              className={`bg-gray-50 hover:bg-gray-100 border-gray-200 w-full ${isMobile ? 'text-xs px-2' : ''}`}
+            >
+              <Upload className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+              {isMobile ? 'Import' : 'Import CSV'}
             </Button>
           </div>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button 
+          onClick={handleAddNew}
+          className={`${isMobile ? 'order-1 w-full' : ''}`}
+        >
+          <Plus className={`${isMobile ? 'h-4 w-4 mr-2' : 'h-4 w-4 mr-2'}`} />
           Add Capability
         </Button>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search capabilities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-            >
-              <option value="all">All Statuses</option>
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="On Hold">On Hold</option>
-            </select>
-            <select
-              value={ragFilter}
-              onChange={(e) => setRagFilter(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-            >
-              <option value="all">All RAG Status</option>
-              <option value="Red">Red</option>
-              <option value="Amber">Amber</option>
-              <option value="Green">Green</option>
-            </select>
-            <div className="text-sm text-gray-600 flex items-center">
-              Showing {filteredCapabilities.length} of {data.capabilities.length} capabilities
-            </div>
+      {/* Collapsible Filters */}
+      <CollapsibleFilter 
+        title="Search & Filters" 
+        activeFiltersCount={activeFiltersCount}
+        defaultCollapsed={true}
+      >
+        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-4'}`}>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search capabilities..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`pl-10 ${isMobile ? 'text-sm h-9' : ''}`}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background ${isMobile ? 'h-9' : 'h-10'}`}
+          >
+            <option value="all">All Statuses</option>
+            <option value="Not Started">Not Started</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="On Hold">On Hold</option>
+          </select>
+          <select
+            value={ragFilter}
+            onChange={(e) => setRagFilter(e.target.value)}
+            className={`flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background ${isMobile ? 'h-9' : 'h-10'}`}
+          >
+            <option value="all">All RAG Status</option>
+            <option value="Red">Red</option>
+            <option value="Amber">Amber</option>
+            <option value="Green">Green</option>
+          </select>
+          <div className={`flex items-center ${isMobile ? 'justify-between' : 'justify-center'}`}>
+            <span className="text-sm text-gray-600">
+              {filteredCapabilities.length} of {data.capabilities.length}
+            </span>
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="ml-2 h-8 px-2"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+      </CollapsibleFilter>
 
-      {/* Capabilities Table View */}
+      {/* Capabilities Table/Mobile View */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[180px]">Name</TableHead>
-                  <TableHead className="min-w-[120px]">Workstream Lead</TableHead>
-                  <TableHead className="min-w-[120px]">SME</TableHead>
-                  <TableHead className="min-w-[120px]">BA</TableHead>
-                  <TableHead className="min-w-[140px]">Milestone</TableHead>
-                  <TableHead className="min-w-[110px]">Status</TableHead>
-                  <TableHead className="min-w-[110px]">RAG</TableHead>
-                  <TableHead className="min-w-[160px]">Notes</TableHead>
-                  <TableHead className="min-w-[70px] text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCapabilities.map((capability) => (
-                  <TableRow key={capability.id}>
-                    <TableCell className="font-medium">{capability.name}</TableCell>
-                    <TableCell>{capability.workstreamLead}</TableCell>
-                    <TableCell>{capability.sme}</TableCell>
-                    <TableCell>{capability.ba}</TableCell>
-                    <TableCell>{capability.milestone || "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(capability.status)}>
-                        {capability.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getRagBadgeColor(capability.ragStatus)}>
-                        {capability.ragStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {capability.notes
-                        ? capability.notes.length > 100
-                          ? `${capability.notes.substring(0, 100)}...`
-                          : capability.notes
-                        : "-"
-                      }
-                    </TableCell>
-                    <TableCell className="flex gap-2 justify-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(capability)}
-                        aria-label="Edit capability"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(capability.id)}
-                        aria-label="Delete capability"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+          {isMobile ? (
+            <MobileTable
+              columns={mobileTableColumns}
+              data={tableData}
+              actions={tableActions}
+              expandedContent={expandedContent}
+              className="text-sm"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[180px]">Name</TableHead>
+                    <TableHead className="min-w-[120px]">Workstream Lead</TableHead>
+                    <TableHead className="min-w-[120px]">SME</TableHead>
+                    <TableHead className="min-w-[120px]">BA</TableHead>
+                    <TableHead className="min-w-[140px]">Milestone</TableHead>
+                    <TableHead className="min-w-[110px]">Status</TableHead>
+                    <TableHead className="min-w-[110px]">RAG</TableHead>
+                    <TableHead className="min-w-[160px]">Notes</TableHead>
+                    <TableHead className="min-w-[70px] text-center">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredCapabilities.map((capability) => (
+                    <TableRow key={capability.id}>
+                      <TableCell className="font-medium">{capability.name}</TableCell>
+                      <TableCell>{capability.workstreamLead}</TableCell>
+                      <TableCell>{capability.sme}</TableCell>
+                      <TableCell>{capability.ba}</TableCell>
+                      <TableCell>{capability.milestone || "-"}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadgeColor(capability.status)}>
+                          {capability.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getRagBadgeColor(capability.ragStatus)}>
+                          {capability.ragStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {capability.notes
+                          ? capability.notes.length > 100
+                            ? `${capability.notes.substring(0, 100)}...`
+                            : capability.notes
+                          : "-"
+                        }
+                      </TableCell>
+                      <TableCell className="flex gap-2 justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(capability)}
+                          aria-label="Edit capability"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(capability.id)}
+                          aria-label="Delete capability"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           {filteredCapabilities.length === 0 && (
-            <div className="p-12 text-center">
+            <div className={`text-center ${isMobile ? 'p-8' : 'p-12'}`}>
               <div className="text-gray-500">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">No capabilities found</h3>
+                <Target className={`mx-auto mb-4 opacity-50 ${isMobile ? 'h-8 w-8' : 'h-12 w-12'}`} />
+                <h3 className={`font-medium mb-2 ${isMobile ? 'text-base' : 'text-lg'}`}>No capabilities found</h3>
                 <p className="text-sm">
                   {data.capabilities.length === 0 
                     ? "Get started by adding your first capability"
