@@ -74,8 +74,8 @@ export default function RoadmapView() {
       return null;
     }
     
-    // Then find the milestone by ID
-    const milestone = data.milestones.find(milestone => milestone.id === capability.milestone);
+    // Since capability.milestone contains the milestone NAME, not ID, search by name
+    const milestone = data.milestones.find(milestone => milestone.name === capability.milestone);
     console.log('Found milestone for capability', capabilityId, ':', milestone);
     
     return milestone;
