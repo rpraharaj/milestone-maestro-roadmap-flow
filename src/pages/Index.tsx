@@ -248,7 +248,7 @@ const Index = () => {
                               return (
                                 <div
                                   key={phase.key}
-                                  className={`absolute h-4 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group`}
+                                  className={`absolute h-4 rounded-sm ${phase.color} shadow-sm hover:shadow-md transition-all cursor-pointer group flex items-center justify-center`}
                                   style={{
                                     left: position.left,
                                     width: position.width,
@@ -256,7 +256,7 @@ const Index = () => {
                                   }}
                                   title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                                 >
-                                  <div className="text-xs text-white font-medium px-1 truncate leading-4 opacity-90 group-hover:opacity-100">
+                                  <div className="text-xs text-white font-medium px-1 truncate leading-4 opacity-90 group-hover:opacity-100 text-center">
                                     {phase.label}
                                   </div>
                                 </div>

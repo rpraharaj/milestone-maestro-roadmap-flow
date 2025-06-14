@@ -86,7 +86,7 @@ const VisualTimeline: React.FC<VisualTimelineProps> = ({
               return (
                 <div
                   key={phase.key}
-                  className={`absolute h-7 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center`}
+                  className={`absolute h-7 rounded ${phase.color} shadow-sm hover:shadow-md transition-shadow cursor-pointer flex items-center justify-center`}
                   style={{
                     left: position.left,
                     width: position.width,
@@ -94,7 +94,7 @@ const VisualTimeline: React.FC<VisualTimelineProps> = ({
                   }}
                   title={`${phase.label}: ${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd")}`}
                 >
-                  <div className="text-xs text-white font-medium p-1 truncate">{phase.label}</div>
+                  <div className="text-xs text-white font-medium px-1 truncate text-center">{phase.label}</div>
                 </div>
               );
             })}
@@ -106,4 +106,3 @@ const VisualTimeline: React.FC<VisualTimelineProps> = ({
 };
 
 export default VisualTimeline;
-
