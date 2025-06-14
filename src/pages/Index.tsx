@@ -38,23 +38,23 @@ const Index = () => {
     },
   ];
 
-  // Get milestone status based on target date
-  const getMilestoneStatus = (targetDate: Date) => {
+  // Get milestone status based on date
+  const getMilestoneStatus = (date: Date) => {
     const now = new Date();
-    const warningThreshold = addDays(targetDate, -7); // 7 days before target
+    const warningThreshold = addDays(date, -7); // 7 days before target
     
     if (isBefore(now, warningThreshold)) {
       return { status: 'on-track', icon: Clock, color: 'text-green-600', bgColor: 'bg-green-100' };
-    } else if (isBefore(now, targetDate)) {
+    } else if (isBefore(now, date)) {
       return { status: 'warning', icon: AlertCircle, color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
     } else {
       return { status: 'overdue', icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100' };
     }
   };
 
-  // Sort milestones by target date
+  // Sort milestones by date
   const sortedMilestones = [...data.milestones].sort((a, b) => 
-    new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime()
+    new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
   return (
@@ -94,7 +94,7 @@ const Index = () => {
           {sortedMilestones.length > 0 ? (
             <div className="space-y-3 sm:space-y-4">
               {sortedMilestones.map((milestone) => {
-                const milestoneStatus = getMilestoneStatus(new Date(milestone.targetDate));
+                const milestoneStatus = getMilestoneStatus(new Date(milestone.date));
                 const StatusIcon = milestoneStatus.icon;
                 
                 return (
@@ -108,13 +108,13 @@ const Index = () => {
                           <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                             {milestone.name}
                           </h3>
-                          <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
-                            {milestone.description}
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                            Milestone deadline
                           </p>
                         </div>
                         <div className="flex flex-col sm:items-end gap-1">
                           <span className="text-xs sm:text-sm font-medium text-gray-900">
-                            {format(new Date(milestone.targetDate), "MMM dd, yyyy")}
+                            {format(new Date(milestone.date), "MMM dd, yyyy")}
                           </span>
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                             milestoneStatus.status === 'on-track' 
