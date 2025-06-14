@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -128,6 +127,8 @@ const MilestoneDialog = ({ milestone, isOpen, onClose }: MilestoneDialogProps) =
                   selected={formData.date}
                   onSelect={handleDateSelect}
                   initialFocus
+                  numberOfMonths={2}
+                  captionLayout="dropdown"
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>

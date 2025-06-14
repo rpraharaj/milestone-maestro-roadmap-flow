@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Button } from "@/components/ui/button";
@@ -130,7 +129,6 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
             {capability && <span className="text-gray-500 text-xs font-medium ml-2">- {capability.name}</span>}
           </DialogTitle>
         </DialogHeader>
-        
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex flex-col gap-2">
             {phases.map((phase) => (
@@ -163,12 +161,13 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           selected={formData[phase.startField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.startField, date)}
                           initialFocus
+                          numberOfMonths={2}
+                          captionLayout="dropdown"
                           className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
-
                   <div className="flex flex-1 items-center gap-1">
                     <Label className="text-xs w-[54px] shrink-0 pr-1">End</Label>
                     <Popover
@@ -190,6 +189,8 @@ const RoadmapPlanDialog = ({ capabilityId, isOpen, onClose }: RoadmapPlanDialogP
                           selected={formData[phase.endField as keyof typeof formData]}
                           onSelect={(date) => handleDateSelect(phase.endField, date)}
                           initialFocus
+                          numberOfMonths={2}
+                          captionLayout="dropdown"
                           className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>

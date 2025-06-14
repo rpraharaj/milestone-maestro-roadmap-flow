@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
@@ -11,12 +12,16 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  numberOfMonths = 2, // Show two months side by side by default
+  captionLayout = "dropdown", // Show dropdowns for month and year
   ...props
 }: CalendarProps) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      numberOfMonths={numberOfMonths}
+      captionLayout={captionLayout}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
